@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="cc-bolt" x1="6" y1="4" x2="42" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E6FF4D"/>
+      <stop offset="1" stop-color="#A8D400"/>
+    </linearGradient>
+    <linearGradient id="cc-plate" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1C1C24"/>
+      <stop offset="1" stop-color="#0A0A0B"/>
+    </linearGradient>
+  </defs>
+  <rect x="1.5" y="1.5" width="45" height="45" rx="13" fill="url(#cc-plate)" stroke="#26262F" stroke-width="1.5"/>
+  <path d="M26 9 L13 26 H22 L19 39 L35 20 H25 L29 9 Z" fill="url(#cc-bolt)"/>
+</svg>

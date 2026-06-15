@@ -1,26 +1,192 @@
 @import "tailwindcss";
 
+/* ================================================================== *
+ *  CoachConnect — "Electric Volt" design system
+ *  Kinetic Athletic · dark-first · volt accent (#CCFF00)
+ * ================================================================== */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Canvas + surfaces (dark-first) */
+  --cc-bg: #0a0a0b;
+  --cc-bg-elev: #121217;
+  --cc-surface: #16161d;
+  --cc-surface-2: #1c1c24;
+  --cc-border: #26262f;
+  --cc-border-strong: #34343f;
+
+  /* Text */
+  --cc-fg: #f4f4f6;
+  --cc-fg-muted: #a0a0ad;
+  --cc-fg-subtle: #6b6b78;
+
+  /* Brand — Electric Volt */
+  --cc-volt: #ccff00;
+  --cc-volt-dim: #a8d400;
+  --cc-volt-deep: #7a9b00;
+  --cc-volt-glow: rgba(204, 255, 0, 0.35);
+
+  /* Supporting accents */
+  --cc-cyan: #00e5ff;
+  --cc-magenta: #ff2d7e;
+  --cc-amber: #ffb020;
+
+  /* Semantic */
+  --cc-success: #00e676;
+  --cc-warning: #ffb020;
+  --cc-danger: #ff4d4d;
+
+  /* Radii + motion */
+  --cc-radius: 14px;
+  --cc-radius-lg: 22px;
+  --cc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --cc-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:root[data-theme="light"] {
+  --cc-bg: #f7f7f5;
+  --cc-bg-elev: #ffffff;
+  --cc-surface: #ffffff;
+  --cc-surface-2: #f0f0ee;
+  --cc-border: #e2e2dd;
+  --cc-border-strong: #cfcfc8;
+  --cc-fg: #121214;
+  --cc-fg-muted: #56565e;
+  --cc-fg-subtle: #8a8a92;
+  --cc-volt: #6f8a00;
+  --cc-volt-dim: #5c7400;
+  --cc-volt-deep: #455800;
+  --cc-volt-glow: rgba(111, 138, 0, 0.18);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--cc-bg);
+  --color-bg-elev: var(--cc-bg-elev);
+  --color-surface: var(--cc-surface);
+  --color-surface-2: var(--cc-surface-2);
+  --color-border: var(--cc-border);
+  --color-border-strong: var(--cc-border-strong);
+  --color-fg: var(--cc-fg);
+  --color-fg-muted: var(--cc-fg-muted);
+  --color-fg-subtle: var(--cc-fg-subtle);
+  --color-volt: var(--cc-volt);
+  --color-volt-dim: var(--cc-volt-dim);
+  --color-volt-deep: var(--cc-volt-deep);
+  --color-cyan: var(--cc-cyan);
+  --color-magenta: var(--cc-magenta);
+  --color-amber: var(--cc-amber);
+  --color-success: var(--cc-success);
+  --color-warning: var(--cc-warning);
+  --color-danger: var(--cc-danger);
+
+  --radius-cc: var(--cc-radius);
+  --radius-cc-lg: var(--cc-radius-lg);
+
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), var(--font-sans), sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
+
+  --animate-shimmer: shimmer 2.2s linear infinite;
+  --animate-pulse-glow: pulseGlow 2.4s var(--cc-ease) infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-marquee: marquee 28s linear infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--cc-volt-glow); }
+  50% { box-shadow: 0 0 28px 4px var(--cc-volt-glow); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.92) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+* {
+  border-color: var(--cc-border);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--cc-bg);
+  color: var(--cc-fg);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Ambient volt grid backdrop for hero/marketing surfaces */
+.cc-grid-bg {
+  background-image:
+    linear-gradient(var(--cc-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cc-border) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+}
+
+/* Volt glow text */
+.cc-volt-text {
+  color: var(--cc-volt);
+  text-shadow: 0 0 22px var(--cc-volt-glow);
+}
+
+/* Gradient sheen for headlines */
+.cc-sheen {
+  background: linear-gradient(
+    100deg,
+    var(--cc-fg) 30%,
+    var(--cc-volt) 50%,
+    var(--cc-fg) 70%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 4s linear infinite;
+}
+
+/* Glass surface */
+.cc-glass {
+  background: color-mix(in srgb, var(--cc-surface) 70%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--cc-border);
+}
+
+/* Focus ring */
+.cc-ring:focus-visible {
+  outline: 2px solid var(--cc-volt);
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--cc-bg); }
+::-webkit-scrollbar-thumb {
+  background: var(--cc-border-strong);
+  border-radius: 99px;
+  border: 2px solid var(--cc-bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--cc-volt-deep); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
