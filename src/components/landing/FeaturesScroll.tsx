@@ -290,7 +290,7 @@ export function FeaturesScroll() {
     <>
       {/* Mobile view: Stacked and interleaved */}
       <section className="relative z-10 bg-[#0A0A0A] border-y border-white/5 lg:hidden py-24">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-none mx-auto px-6">
           <div className="flex flex-col flex-1">
             {services.map((service, i) => (
               <div key={service.id} className="flex flex-col mb-24 last:mb-0 relative">
@@ -316,7 +316,7 @@ export function FeaturesScroll() {
       {/* Desktop view: Pinned scrolljacking */}
       <section ref={containerRef} className="relative z-10 bg-[#0A0A0A] border-y border-white/5 h-[400vh] hidden lg:block">
         <div className="sticky top-0 h-screen w-full flex items-center">
-          <div className="max-w-7xl mx-auto w-full px-12 flex flex-row relative h-[600px]">
+          <div className="max-w-none mx-auto w-full px-12 flex flex-row relative h-[600px]">
 
             {/* Left Hand Content Area (Text) */}
             <div className="w-[45%] flex flex-col justify-center relative pr-8">

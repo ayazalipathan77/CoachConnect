@@ -16,7 +16,10 @@
 body {
   background-color: #050505;
   color: #fafafa;
-  overflow-x: hidden;
+  /* `clip` (not `hidden`) stops horizontal overflow without turning <body>
+     into a scroll container — which would break the sticky scroll-jacking
+     in the Services (FeaturesScroll) section. */
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

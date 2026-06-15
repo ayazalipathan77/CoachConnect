@@ -19,7 +19,7 @@ export function CoachDiscovery() {
 
   return (
     <section id="discover" className="relative py-24 z-10">
-      <div className="max-w-7xl mx-auto px-6 lg:px-12">
+      <div className="max-w-none mx-auto px-6 lg:px-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
