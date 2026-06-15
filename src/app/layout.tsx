@@ -1,34 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Sora, JetBrains_Mono } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ variable: "--font-sans", subsets: ["latin"] });
-const sora = Sora({
-  variable: "--font-display",
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
+  variable: "--font-inter",
+  weight: ["400", "500", "600"],
 });
-const mono = JetBrains_Mono({ variable: "--font-mono", subsets: ["latin"] });
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  weight: ["400", "500", "700"],
+});
 
 export const metadata: Metadata = {
-  title: {
-    default: "CoachConnect — Find & book elite sports coaches near you",
-    template: "%s · CoachConnect",
-  },
+  title: "CoachConnect — Master Your Discipline",
   description:
-    "CoachConnect is the marketplace where coaches monetise their expertise and clients discover, evaluate, and book sessions with verified sports coaches nearby.",
-  applicationName: "CoachConnect",
-  keywords: [
-    "sports coaching",
-    "personal trainer",
-    "book a coach",
-    "tennis coach",
-    "football coach",
-  ],
+    "High-end sports coaching marketplace platform with dynamic scroll animations and 3D visual effects. Connect with elite coaches, book sessions seamlessly, and elevate your game.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0b",
+  themeColor: "#050505",
   colorScheme: "dark",
 };
 
@@ -36,12 +28,8 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      data-theme="dark"
-      className={`${inter.variable} ${sora.variable} ${mono.variable} h-full`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }
