@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { motion } from 'motion/react';
 import { ArrowRight, PlayCircle } from 'lucide-react';
 
@@ -48,14 +49,14 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: 'easeOut', delay: 0.4 }}
           >
-            <button className="bg-brand text-black px-8 py-4 rounded-full font-bold text-lg hover:bg-brand-dark transition-all flex items-center gap-2 group">
+            <Link href="/discover" className="bg-brand text-black px-8 py-4 rounded-full font-bold text-lg hover:bg-brand-dark transition-all flex items-center gap-2 group">
               Find a Coach
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <button className="bg-transparent text-white border border-white/20 px-8 py-4 rounded-full font-bold text-lg hover:bg-white/10 transition-all flex items-center gap-2">
+            </Link>
+            <Link href="/#how-it-works" className="bg-transparent text-white border border-white/20 px-8 py-4 rounded-full font-bold text-lg hover:bg-white/10 transition-all flex items-center gap-2">
               <PlayCircle className="w-5 h-5" />
               See How it Works
-            </button>
+            </Link>
           </motion.div>
         </div>
 

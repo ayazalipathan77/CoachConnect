@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
+import { format, isPast } from "date-fns";
 import { CalendarPlus, Wallet, Star, Users } from "lucide-react";
 import { requireRole } from "@/server/auth/current-user";
 import { db, schema } from "@/server/db";
+import { getCoachBookings } from "@/server/repositories/bookings";
 import { DashboardShell, StatCard } from "@/components/dashboard/DashboardShell";
+import { gbp } from "@/lib/money";
 
 export default async function CoachDashboard() {
   const user = await requireRole("coach");
@@ -16,6 +19,18 @@ export default async function CoachDashboard() {
 
   const completeness = profile?.completeness ?? 0;
   const status = profile?.status ?? "pending_review";
+
+  const bookings = profile ? await getCoachBookings(user.userId) : [];
+  const upcomingBookings = bookings.filter((b) => !isPast(b.startAt) && b.status === "confirmed");
+  const earningsMinor = bookings
+    .filter((b) => b.status === "confirmed" || b.status === "completed")
+    .reduce((sum, b) => sum + b.coachFeeMinor, 0);
+  const openSlots = profile
+    ? await db
+        .select({ id: schema.slots.id })
+        .from(schema.slots)
+        .where(and(eq(schema.slots.coachId, profile.id), eq(schema.slots.status, "open"), gt(schema.slots.startAt, new Date())))
+    : [];
 
   return (
     <DashboardShell user={user}>
@@ -40,9 +55,9 @@ export default async function CoachDashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="This month" value="£0" hint="Earnings" />
-        <StatCard label="Upcoming" value="0" hint="Confirmed bookings" />
-        <StatCard label="Open slots" value="0" />
+        <StatCard label="Earnings" value={gbp(earningsMinor)} hint="Confirmed + completed" />
+        <StatCard label="Upcoming" value={String(upcomingBookings.length)} hint="Confirmed bookings" />
+        <StatCard label="Open slots" value={String(openSlots.length)} />
         <StatCard label="Rating" value={profile?.ratingAvg ? profile.ratingAvg.toFixed(1) : "—"} hint={`${profile?.ratingCount ?? 0} reviews`} />
       </div>
 
@@ -66,7 +81,21 @@ export default async function CoachDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-[#111111] border border-white/10 rounded-3xl p-6">
           <h3 className="font-bold flex items-center gap-2 mb-4"><Wallet className="w-4 h-4 text-brand" /> Recent bookings</h3>
-          <p className="text-white/40 text-sm">No bookings yet.</p>
+          {bookings.length === 0 ? (
+            <p className="text-white/40 text-sm">No bookings yet.</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {bookings.slice(0, 5).map((b) => (
+                <div key={b.id} className="flex items-center justify-between text-sm">
+                  <div>
+                    <p className="font-medium">{b.clientName}</p>
+                    <p className="text-white/40 text-xs">{b.sessionType} · {format(b.startAt, "EEE d MMM · HH:mm")}</p>
+                  </div>
+                  <span className="text-brand font-bold">{gbp(b.coachFeeMinor)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div className="bg-[#111111] border border-white/10 rounded-3xl p-6">
           <h3 className="font-bold flex items-center gap-2 mb-4"><Star className="w-4 h-4 text-brand" /> Recent reviews</h3>

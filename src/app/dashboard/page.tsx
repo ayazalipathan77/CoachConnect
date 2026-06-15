@@ -1,13 +1,20 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { format, isPast } from "date-fns";
 import { Search, Calendar, Star } from "lucide-react";
 import { requireUser } from "@/server/auth/current-user";
+import { getClientBookings } from "@/server/repositories/bookings";
 import { DashboardShell, StatCard } from "@/components/dashboard/DashboardShell";
+import { gbp } from "@/lib/money";
 
 export default async function AthleteDashboard() {
   const user = await requireUser();
   if (user.role === "coach") redirect("/dashboard/coach");
   if (user.role === "admin") redirect("/dashboard/admin");
+
+  const bookings = await getClientBookings(user.userId);
+  const upcoming = bookings.filter((b) => !isPast(b.startAt) && b.status === "confirmed");
+  const completed = bookings.filter((b) => isPast(b.startAt));
 
   return (
     <DashboardShell user={user}>
@@ -19,9 +26,9 @@ export default async function AthleteDashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-        <StatCard label="Upcoming sessions" value="0" hint="Next 7 days" />
-        <StatCard label="Completed sessions" value="0" hint="All time" />
-        <StatCard label="Saved coaches" value="0" />
+        <StatCard label="Upcoming sessions" value={String(upcoming.length)} hint="Confirmed" />
+        <StatCard label="Completed sessions" value={String(completed.length)} hint="All time" />
+        <StatCard label="Total bookings" value={String(bookings.length)} />
       </div>
 
       <div className="bg-[#111111] border border-white/10 rounded-3xl p-10 text-center">
@@ -43,8 +50,25 @@ export default async function AthleteDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
         <div className="bg-[#111111] border border-white/10 rounded-3xl p-6">
-          <h3 className="font-bold flex items-center gap-2 mb-4"><Calendar className="w-4 h-4 text-brand" /> Upcoming bookings</h3>
-          <p className="text-white/40 text-sm">No upcoming bookings yet.</p>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold flex items-center gap-2"><Calendar className="w-4 h-4 text-brand" /> Upcoming bookings</h3>
+            {bookings.length > 0 && <Link href="/bookings" className="text-brand text-sm hover:underline">View all</Link>}
+          </div>
+          {upcoming.length === 0 ? (
+            <p className="text-white/40 text-sm">No upcoming bookings yet.</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {upcoming.slice(0, 4).map((b) => (
+                <div key={b.id} className="flex items-center justify-between text-sm">
+                  <div>
+                    <p className="font-medium">{b.coachName}</p>
+                    <p className="text-white/40 text-xs">{b.sessionType} · {format(b.startAt, "EEE d MMM · HH:mm")}</p>
+                  </div>
+                  <span className="text-brand font-bold">{gbp(b.totalMinor)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div className="bg-[#111111] border border-white/10 rounded-3xl p-6">
           <h3 className="font-bold flex items-center gap-2 mb-4"><Star className="w-4 h-4 text-brand" /> Leave a review</h3>

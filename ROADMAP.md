@@ -8,6 +8,12 @@
 
 **Last updated:** 2026-06-15
 
+> **Progress so far:** Phase 0 ✅ · Phase 1 (auth) ✅ · Phase 3 (discovery) ✅ ·
+> Phase 4 core (booking + escrow) ✅. Live flow: sign up → discover coaches →
+> coach profile → book a slot → mock escrow payment → My Bookings, with real
+> data from Postgres and session-aware dashboards. Design = 1:1 port of the
+> reference repo (full-width, "The Track").
+
 ---
 
 ## 🧱 Phase 0 — Foundation & Architecture ✅
@@ -32,12 +38,12 @@
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
-| 1.1 | Auth.js (NextAuth v5) + Drizzle adapter | 🔲 | email/password + OAuth scaffolding |
-| 1.2 | Email/password credentials provider | 🔲 | bcrypt/argon hash on `users.passwordHash` |
+| 1.1 | Auth.js (NextAuth v5) + Drizzle adapter | ✅ | email/password + OAuth scaffolding |
+| 1.2 | Email/password credentials provider | ✅ | bcrypt/argon hash on `users.passwordHash` |
 | 1.3 | Google / Apple OAuth | 🔲 | wired, keys pending |
-| 1.4 | Role-aware session (coach/client/admin) | 🔲 | role in JWT/session |
-| 1.5 | Client registration + onboarding | 🔲 | name, dob, location, preferred sports |
-| 1.6 | Coach registration + multi-step wizard | 🔲 | details → sports → experience → location → bio |
+| 1.4 | Role-aware session (coach/client/admin) | ✅ | role in JWT/session |
+| 1.5 | Client registration + onboarding | 🟡 | name, dob, location, preferred sports |
+| 1.6 | Coach registration + multi-step wizard | 🟡 | details → sports → experience → location → bio |
 | 1.7 | ToS / Coach Code of Conduct acceptance | 🔲 | gate before activation |
 | 1.8 | Profile completeness + 'Pending Review' gate (80%) | 🔲 | `coach_profiles.completeness` |
 | 1.9 | Activation email | 🔲 | via email adapter |
@@ -71,13 +77,13 @@
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
-| 3.1 | Search interface (free-text) | 🔲 | name / sport / location |
-| 3.2 | Filters: sport, distance, availability, price, rating, level | 🔲 | BRD §6.2.1 |
-| 3.3 | Relevance sort (proximity + rating) + sort options | 🔲 | combined score |
-| 3.4 | List view of results | 🔲 | coach cards |
+| 3.1 | Search interface (free-text) | ✅ | name / sport / location |
+| 3.2 | Filters: sport, distance, availability, price, rating, level | 🟡 | BRD §6.2.1 |
+| 3.3 | Relevance sort (proximity + rating) + sort options | 🟡 | combined score |
+| 3.4 | List view of results | ✅ | coach cards |
 | 3.5 | Map view + proximity clustering | 🔲 | maps adapter (mock→Google) |
-| 3.6 | Public coach profile (client view) | 🔲 | all sections + bookable slots |
-| 3.7 | 'Book This Slot' / 'Enquire' / social share | 🔲 | CTAs |
+| 3.6 | Public coach profile (client view) | ✅ | all sections + bookable slots |
+| 3.7 | 'Book This Slot' / 'Enquire' / social share | ✅ | CTAs |
 
 ---
 
@@ -87,15 +93,15 @@
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
-| 4.1 | Slot selection + booking summary | 🔲 | price incl. service charge |
-| 4.2 | Payment intent (escrow, manual capture) | 🔲 | Stripe test / mock adapter |
+| 4.1 | Slot selection + booking summary | ✅ | price incl. service charge |
+| 4.2 | Payment intent (escrow, manual capture) | ✅ | Stripe test / mock adapter |
 | 4.3 | Card + wallets (Apple/Google Pay) | 🔲 | Stripe Payment Element |
-| 4.4 | Booking confirmation (email + in-app) | 🔲 | <60s acceptance criterion |
+| 4.4 | Booking confirmation (email + in-app) | ✅ | <60s acceptance criterion |
 | 4.5 | Escrow release on completion | 🔲 | capture intent |
-| 4.6 | Commission calc (15% configurable) | 🔲 | service-layer pricing |
+| 4.6 | Commission calc (15% configurable) | ✅ | service-layer pricing |
 | 4.7 | Cancellation policy + refund tiers | 🔲 | 48h/24h matrix (BRD §8.1) |
 | 4.8 | Coach cancellation + strikes (3/90d → suspend) | 🔲 | strike counter |
-| 4.9 | My Bookings (upcoming/past/cancelled) + re-book | 🔲 | both portals |
+| 4.9 | My Bookings (upcoming/past/cancelled) + re-book | ✅ | both portals |
 
 ---
 
