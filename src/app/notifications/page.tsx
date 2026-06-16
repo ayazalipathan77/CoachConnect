@@ -1,4 +1,5 @@
-import { Bell } from "lucide-react";
+import Link from "next/link";
+import { Bell, ArrowLeft } from "lucide-react";
 import { requireUser } from "@/server/auth/current-user";
 import {
   getNotifications,
@@ -22,6 +23,9 @@ export default async function NotificationsPage() {
 
   return (
     <DashboardShell user={user}>
+      <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-white/50 hover:text-brand transition-colors text-sm mb-6">
+        <ArrowLeft className="w-4 h-4" /> Dashboard
+      </Link>
       <div className="flex items-center gap-3 mb-2">
         <div className="w-10 h-10 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center">
           <Bell className="w-5 h-5 text-brand" />

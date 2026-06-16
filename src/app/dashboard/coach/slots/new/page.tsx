@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { CalendarPlus } from "lucide-react";
+import { CalendarPlus, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { requireRole } from "@/server/auth/current-user";
 import { db, schema } from "@/server/db";
@@ -30,6 +30,9 @@ export default async function NewSlotPage() {
   return (
     <CoachShell user={user}>
       <div className="max-w-2xl">
+        <Link href="/dashboard/coach/slots" className="inline-flex items-center gap-1.5 text-white/50 hover:text-brand transition-colors text-sm mb-6">
+          <ArrowLeft className="w-4 h-4" /> My slots
+        </Link>
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center">
             <CalendarPlus className="w-5 h-5 text-brand" />

@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
-import { User } from "lucide-react";
+import { User, ArrowLeft } from "lucide-react";
 import { requireUser } from "@/server/auth/current-user";
 import { db, schema } from "@/server/db";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
@@ -49,6 +50,9 @@ export default async function ClientProfilePage() {
   return (
     <DashboardShell user={user}>
       <div className="max-w-2xl">
+        <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-white/50 hover:text-brand transition-colors text-sm mb-6">
+          <ArrowLeft className="w-4 h-4" /> Dashboard
+        </Link>
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center">
             <User className="w-5 h-5 text-brand" />

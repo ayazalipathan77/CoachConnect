@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { format, isPast } from "date-fns";
-import { CheckCircle2, Calendar, XCircle, ArrowRight } from "lucide-react";
+import { CheckCircle2, Calendar, XCircle, ArrowRight, ArrowLeft } from "lucide-react";
 import { requireUser } from "@/server/auth/current-user";
 import { getClientBookings } from "@/server/repositories/bookings";
 import { hasReviewed } from "@/server/repositories/reviews";
@@ -52,6 +52,9 @@ export default async function BookingsPage({
 
   return (
     <DashboardShell user={user}>
+      <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-white/50 hover:text-brand transition-colors text-sm mb-6">
+        <ArrowLeft className="w-4 h-4" /> Dashboard
+      </Link>
       <h1 className="font-display font-bold text-4xl tracking-tight mb-2">My Bookings</h1>
       <p className="text-white/50 mb-8">Manage your upcoming and past sessions.</p>
 
