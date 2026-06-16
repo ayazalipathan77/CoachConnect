@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Search } from 'lucide-react';
+import { LayoutGrid, Map, Navigation, Search } from 'lucide-react';
 
 type SportOpt = { name: string; slug: string };
 
@@ -11,21 +11,28 @@ export function DiscoverControls({
   q = '',
   sport = '',
   sort = 'relevance',
+  view = 'grid',
+  near = '',
 }: {
   sports: SportOpt[];
   q?: string;
   sport?: string;
   sort?: string;
+  view?: string;
+  near?: string;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(q);
+  const [nearQuery, setNearQuery] = useState(near);
 
-  function navigate(next: Partial<{ q: string; sport: string; sort: string }>) {
+  function navigate(next: Partial<{ q: string; sport: string; sort: string; view: string; near: string }>) {
     const params = new URLSearchParams();
-    const merged = { q: query, sport, sort, ...next };
+    const merged = { q: query, sport, sort, view, near: nearQuery, ...next };
     if (merged.q) params.set('q', merged.q);
     if (merged.sport) params.set('sport', merged.sport);
     if (merged.sort && merged.sort !== 'relevance') params.set('sort', merged.sort);
+    if (merged.view && merged.view !== 'grid') params.set('view', merged.view);
+    if (merged.near) params.set('near', merged.near);
     router.push(`/discover${params.toString() ? `?${params}` : ''}`);
   }
 
@@ -44,15 +51,46 @@ export function DiscoverControls({
             className="w-full bg-surface border border-white/10 rounded-full py-3.5 pl-12 pr-4 text-white placeholder:text-white/40 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
           />
         </form>
+
+        {/* Proximity filter — only relevant in map view */}
+        <form
+          className="relative md:w-56"
+          onSubmit={(e) => { e.preventDefault(); navigate({ near: nearQuery, view: 'map' }); }}
+        >
+          <Navigation className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+          <input
+            value={nearQuery}
+            onChange={(e) => setNearQuery(e.target.value)}
+            placeholder="Near city or postcode…"
+            className="w-full bg-surface border border-white/10 rounded-full py-3.5 pl-12 pr-4 text-white placeholder:text-white/40 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
+          />
+        </form>
+
         <select
           value={sort}
           onChange={(e) => navigate({ sort: e.target.value })}
-          className="bg-surface border border-white/10 rounded-full px-5 py-3.5 text-white text-sm focus:outline-none focus:border-brand md:w-56"
+          className="bg-surface border border-white/10 rounded-full px-5 py-3.5 text-white text-sm focus:outline-none focus:border-brand md:w-44"
         >
           <option value="relevance">Highest rated</option>
           <option value="price">Lowest price</option>
           <option value="reviews">Most reviewed</option>
         </select>
+
+        {/* Grid / Map toggle */}
+        <div className="flex rounded-full border border-white/10 overflow-hidden shrink-0">
+          <button
+            onClick={() => navigate({ view: 'grid' })}
+            className={`flex items-center gap-2 px-5 py-3.5 text-sm font-bold transition-colors ${view === 'grid' ? 'bg-brand text-black' : 'bg-surface text-white/60 hover:text-white'}`}
+          >
+            <LayoutGrid className="w-4 h-4" /> Grid
+          </button>
+          <button
+            onClick={() => navigate({ view: 'map' })}
+            className={`flex items-center gap-2 px-5 py-3.5 text-sm font-bold transition-colors ${view === 'map' ? 'bg-brand text-black' : 'bg-surface text-white/60 hover:text-white'}`}
+          >
+            <Map className="w-4 h-4" /> Map
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">

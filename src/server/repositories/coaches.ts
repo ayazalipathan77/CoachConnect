@@ -15,6 +15,8 @@ export type CoachCard = {
   ratingCount: number;
   rateMinor: number | null;
   verified: boolean;
+  lat: number | null;
+  lng: number | null;
 };
 
 export async function listCoaches(opts: {
@@ -56,6 +58,8 @@ export async function listCoaches(opts: {
       ratingCount: schema.coachProfiles.ratingCount,
       rateMinor: schema.coachProfiles.defaultRateMinor,
       verificationStatus: schema.coachProfiles.verificationStatus,
+      lat: schema.users.lat,
+      lng: schema.users.lng,
     })
     .from(schema.coachProfiles)
     .innerJoin(schema.users, eq(schema.users.id, schema.coachProfiles.userId))
@@ -82,6 +86,8 @@ export async function listCoaches(opts: {
       ratingCount: r.ratingCount,
       rateMinor: r.rateMinor,
       verified: r.verificationStatus === "verified",
+      lat: r.lat,
+      lng: r.lng,
     });
   }
   return [...seen.values()];

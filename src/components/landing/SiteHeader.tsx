@@ -20,12 +20,20 @@ export async function SiteHeader() {
         </nav>
         <div className="flex items-center gap-4">
           {user ? (
-            <Link
-              href={dashHref}
-              className="bg-brand text-black px-5 py-2.5 rounded-full text-sm font-bold hover:bg-brand-dark transition-colors"
-            >
-              Dashboard
-            </Link>
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:flex items-center gap-2 text-sm text-white/60">
+                <span className="px-2 py-0.5 rounded-full bg-brand/10 text-brand text-xs font-bold uppercase tracking-wider border border-brand/20">
+                  {user.role}
+                </span>
+                {user.name ?? user.email}
+              </span>
+              <Link
+                href={dashHref}
+                className="bg-brand text-black px-5 py-2.5 rounded-full text-sm font-bold hover:bg-brand-dark transition-colors"
+              >
+                Dashboard
+              </Link>
+            </div>
           ) : (
             <>
               <Link href="/login" className="hidden sm:block text-sm font-bold text-white hover:text-brand transition-colors">
