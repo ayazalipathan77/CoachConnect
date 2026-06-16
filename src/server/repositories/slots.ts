@@ -1,6 +1,31 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db, schema } from "@/server/db";
+
+export async function getCoachSlots(coachId: string) {
+  return db
+    .select({
+      id: schema.slots.id,
+      startAt: schema.slots.startAt,
+      durationMin: schema.slots.durationMin,
+      sessionType: schema.slots.sessionType,
+      feeMinor: schema.slots.feeMinor,
+      status: schema.slots.status,
+      venueName: schema.venues.name,
+      venueCity: schema.venues.city,
+    })
+    .from(schema.slots)
+    .leftJoin(schema.venues, eq(schema.venues.id, schema.slots.venueId))
+    .where(eq(schema.slots.coachId, coachId))
+    .orderBy(desc(schema.slots.startAt));
+}
+
+export async function getCoachVenues(coachId: string) {
+  return db
+    .select({ id: schema.venues.id, name: schema.venues.name, city: schema.venues.city })
+    .from(schema.venues)
+    .where(eq(schema.venues.coachId, coachId));
+}
 
 export async function getBookableSlot(slotId: string) {
   const [row] = await db
