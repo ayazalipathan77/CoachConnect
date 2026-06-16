@@ -6,7 +6,8 @@ import { requireRole } from "@/server/auth/current-user";
 import { db, schema } from "@/server/db";
 import { getCoachBookings } from "@/server/repositories/bookings";
 import { completeSession, coachCancelBooking } from "@/server/booking/complete";
-import { DashboardShell, StatCard } from "@/components/dashboard/DashboardShell";
+import { StatCard } from "@/components/dashboard/DashboardShell";
+import { CoachShell } from "@/components/coach/CoachShell";
 import { gbp } from "@/lib/money";
 
 export default async function CoachDashboard() {
@@ -34,7 +35,7 @@ export default async function CoachDashboard() {
     : [];
 
   return (
-    <DashboardShell user={user}>
+    <CoachShell user={user}>
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display font-bold text-4xl tracking-tight">
@@ -124,6 +125,6 @@ export default async function CoachDashboard() {
           <p className="text-white/40 text-sm">Reviews appear here after sessions.</p>
         </div>
       </div>
-    </DashboardShell>
+    </CoachShell>
   );
 }

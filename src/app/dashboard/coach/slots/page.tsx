@@ -6,7 +6,7 @@ import { requireRole } from "@/server/auth/current-user";
 import { db, schema } from "@/server/db";
 import { getCoachSlots } from "@/server/repositories/slots";
 import { cancelSlot } from "@/server/coach/actions";
-import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { CoachShell } from "@/components/coach/CoachShell";
 import { gbp } from "@/lib/money";
 
 const STATUS_STYLE: Record<string, string> = {
@@ -34,7 +34,7 @@ export default async function CoachSlotsPage({
   const past = slots.filter((s) => isPast(s.startAt));
 
   return (
-    <DashboardShell user={user}>
+    <CoachShell user={user}>
       {params.created && (
         <div className="mb-6 flex items-center gap-3 bg-brand/10 border border-brand/20 rounded-2xl px-5 py-3.5 text-brand font-medium text-sm">
           <CalendarPlus className="w-4 h-4 shrink-0" /> Slot created — clients can now discover and book it.
@@ -78,7 +78,7 @@ export default async function CoachSlotsPage({
           )}
         </div>
       )}
-    </DashboardShell>
+    </CoachShell>
   );
 }
 

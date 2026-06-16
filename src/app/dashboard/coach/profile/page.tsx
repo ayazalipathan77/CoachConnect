@@ -1,45 +1,57 @@
 import { eq } from "drizzle-orm";
 import { User } from "lucide-react";
-import Link from "next/link";
 import { requireRole } from "@/server/auth/current-user";
 import { db, schema } from "@/server/db";
-import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { CoachShell } from "@/components/coach/CoachShell";
 import { ProfileForm } from "@/components/coach/ProfileForm";
+import { SportsManager } from "@/components/coach/SportsManager";
+import { AvatarUpload } from "@/components/coach/AvatarUpload";
 
 export default async function CoachProfilePage() {
   const user = await requireRole("coach");
 
-  const [profile] = await db
-    .select({
-      headline: schema.coachProfiles.headline,
-      bio: schema.coachProfiles.bio,
-      philosophy: schema.coachProfiles.philosophy,
-      experienceYears: schema.coachProfiles.experienceYears,
-      experienceLevel: schema.coachProfiles.experienceLevel,
-      defaultRateMinor: schema.coachProfiles.defaultRateMinor,
-      visibility: schema.coachProfiles.visibility,
-      completeness: schema.coachProfiles.completeness,
-    })
-    .from(schema.coachProfiles)
-    .where(eq(schema.coachProfiles.userId, user.userId))
-    .limit(1);
+  const [profile, userData, allSports] = await Promise.all([
+    db
+      .select({
+        id: schema.coachProfiles.id,
+        headline: schema.coachProfiles.headline,
+        bio: schema.coachProfiles.bio,
+        philosophy: schema.coachProfiles.philosophy,
+        experienceYears: schema.coachProfiles.experienceYears,
+        experienceLevel: schema.coachProfiles.experienceLevel,
+        defaultRateMinor: schema.coachProfiles.defaultRateMinor,
+        visibility: schema.coachProfiles.visibility,
+        completeness: schema.coachProfiles.completeness,
+      })
+      .from(schema.coachProfiles)
+      .where(eq(schema.coachProfiles.userId, user.userId))
+      .limit(1)
+      .then((r) => r[0] ?? null),
+    db
+      .select({ locationCity: schema.users.locationCity, image: schema.users.image })
+      .from(schema.users)
+      .where(eq(schema.users.id, user.userId))
+      .limit(1)
+      .then((r) => r[0] ?? null),
+    db
+      .select({ id: schema.sports.id, name: schema.sports.name })
+      .from(schema.sports)
+      .where(eq(schema.sports.active, true))
+      .orderBy(schema.sports.name),
+  ]);
 
-  const [userData] = await db
-    .select({ locationCity: schema.users.locationCity })
-    .from(schema.users)
-    .where(eq(schema.users.id, user.userId))
-    .limit(1);
+  const currentSports = profile
+    ? await db
+        .select({ id: schema.sports.id, name: schema.sports.name })
+        .from(schema.coachSports)
+        .innerJoin(schema.sports, eq(schema.sports.id, schema.coachSports.sportId))
+        .where(eq(schema.coachSports.coachId, profile.id))
+    : [];
 
   const completeness = profile?.completeness ?? 0;
 
   return (
-    <DashboardShell user={user}>
-      <div className="mb-6">
-        <Link href="/dashboard/coach" className="text-white/40 hover:text-white transition-colors text-sm">
-          ← Dashboard
-        </Link>
-      </div>
-
+    <CoachShell user={user}>
       <div className="max-w-2xl">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center">
@@ -55,21 +67,36 @@ export default async function CoachProfilePage() {
           <span className="text-brand text-sm font-bold">{completeness}% complete</span>
         </div>
 
-        <div className="bg-[#111111] border border-white/10 rounded-3xl p-8">
-          <ProfileForm
-            defaultValues={{
-              headline: profile?.headline ?? null,
-              bio: profile?.bio ?? null,
-              philosophy: profile?.philosophy ?? null,
-              experienceYears: profile?.experienceYears ?? 0,
-              experienceLevel: profile?.experienceLevel ?? "intermediate",
-              defaultRateMinor: profile?.defaultRateMinor ?? null,
-              visibility: profile?.visibility ?? "public",
-              locationCity: userData?.locationCity ?? null,
-            }}
-          />
+        <div className="flex flex-col gap-6">
+          {/* Photo */}
+          <div className="bg-[#111] border border-white/10 rounded-3xl p-6">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">Photo</h3>
+            <AvatarUpload currentImage={userData?.image ?? null} />
+          </div>
+
+          {/* Profile details */}
+          <div className="bg-[#111] border border-white/10 rounded-3xl p-8">
+            <ProfileForm
+              defaultValues={{
+                headline: profile?.headline ?? null,
+                bio: profile?.bio ?? null,
+                philosophy: profile?.philosophy ?? null,
+                experienceYears: profile?.experienceYears ?? 0,
+                experienceLevel: profile?.experienceLevel ?? "intermediate",
+                defaultRateMinor: profile?.defaultRateMinor ?? null,
+                visibility: profile?.visibility ?? "public",
+                locationCity: userData?.locationCity ?? null,
+              }}
+            />
+          </div>
+
+          {/* Sports */}
+          <div className="bg-[#111] border border-white/10 rounded-3xl p-6">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">Sports you coach</h3>
+            <SportsManager currentSports={currentSports} allSports={allSports} />
+          </div>
         </div>
       </div>
-    </DashboardShell>
+    </CoachShell>
   );
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { requireRole } from "@/server/auth/current-user";
 import { db, schema } from "@/server/db";
 import { getCoachVenues } from "@/server/repositories/slots";
-import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { CoachShell } from "@/components/coach/CoachShell";
 import { SlotForm } from "@/components/coach/SlotForm";
 
 export default async function NewSlotPage() {
@@ -28,13 +28,7 @@ export default async function NewSlotPage() {
   const sportOpts = sports.map((s) => ({ id: s.id, label: s.name }));
 
   return (
-    <DashboardShell user={user}>
-      <div className="mb-8 flex items-center gap-3">
-        <Link href="/dashboard/coach/slots" className="text-white/40 hover:text-white transition-colors text-sm">
-          ← My slots
-        </Link>
-      </div>
-
+    <CoachShell user={user}>
       <div className="max-w-2xl">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center">
@@ -50,6 +44,6 @@ export default async function NewSlotPage() {
           <SlotForm venues={venueOpts} sports={sportOpts} />
         </div>
       </div>
-    </DashboardShell>
+    </CoachShell>
   );
 }

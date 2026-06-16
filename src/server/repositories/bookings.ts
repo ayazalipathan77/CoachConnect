@@ -1,5 +1,5 @@
 import "server-only";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { db, schema } from "@/server/db";
 
 export async function getClientBookings(clientUserId: string) {
@@ -33,7 +33,7 @@ export async function getClientBookings(clientUserId: string) {
     .orderBy(desc(schema.slots.startAt));
 }
 
-export async function getCoachBookings(coachUserId: string) {
+export async function getCoachBookings(coachUserId: string, statusFilter?: string) {
   const [coach] = await db
     .select({ id: schema.coachProfiles.id })
     .from(schema.coachProfiles)
@@ -41,19 +41,35 @@ export async function getCoachBookings(coachUserId: string) {
     .limit(1);
   if (!coach) return [];
 
+  const filters = [eq(schema.bookings.coachId, coach.id)];
+  if (statusFilter && statusFilter !== "all") {
+    // Accept comma-separated statuses e.g. "confirmed,completed"
+    const statuses = statusFilter.split(",") as (typeof schema.bookings.status._.data)[];
+    if (statuses.length === 1) {
+      filters.push(eq(schema.bookings.status, statuses[0]!));
+    }
+  }
+
   return db
     .select({
       id: schema.bookings.id,
       status: schema.bookings.status,
       coachFeeMinor: schema.bookings.coachFeeMinor,
+      totalMinor: schema.bookings.totalMinor,
+      refundMinor: schema.bookings.refundMinor,
+      cancelledAt: schema.bookings.cancelledAt,
+      clientMessage: schema.bookings.clientMessage,
+      createdAt: schema.bookings.createdAt,
       startAt: schema.slots.startAt,
+      durationMin: schema.slots.durationMin,
       sessionType: schema.slots.sessionType,
       clientName: schema.users.name,
+      clientImage: schema.users.image,
     })
     .from(schema.bookings)
     .innerJoin(schema.slots, eq(schema.slots.id, schema.bookings.slotId))
     .innerJoin(schema.clientProfiles, eq(schema.clientProfiles.id, schema.bookings.clientId))
     .innerJoin(schema.users, eq(schema.users.id, schema.clientProfiles.userId))
-    .where(eq(schema.bookings.coachId, coach.id))
+    .where(and(eq(schema.bookings.coachId, coach.id), ...filters.slice(1)))
     .orderBy(desc(schema.slots.startAt));
 }

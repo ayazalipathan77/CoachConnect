@@ -146,6 +146,57 @@ export async function createSlot(
   redirect("/dashboard/coach/slots?created=1");
 }
 
+export async function addCoachSport(formData: FormData): Promise<void> {
+  const user = await requireRole("coach");
+  const coachId = await coachProfileId(user.userId);
+  const sportId = String(formData.get("sportId") ?? "").trim();
+  if (!coachId || !sportId) return;
+
+  await db
+    .insert(schema.coachSports)
+    .values({ coachId, sportId })
+    .onConflictDoNothing();
+
+  revalidatePath("/dashboard/coach/profile");
+}
+
+export async function removeCoachSport(formData: FormData): Promise<void> {
+  const user = await requireRole("coach");
+  const coachId = await coachProfileId(user.userId);
+  const sportId = String(formData.get("sportId") ?? "").trim();
+  if (!coachId || !sportId) return;
+
+  await db
+    .delete(schema.coachSports)
+    .where(and(eq(schema.coachSports.coachId, coachId), eq(schema.coachSports.sportId, sportId)));
+
+  revalidatePath("/dashboard/coach/profile");
+}
+
+export async function updateAvatar(
+  _prev: ProfileState,
+  formData: FormData,
+): Promise<ProfileState> {
+  const user = await requireRole("coach");
+  const imageUrl = String(formData.get("imageUrl") ?? "").trim();
+  if (!imageUrl) return { error: "No image provided." };
+
+  // Accept data URLs (base64 upload) or https URLs.
+  if (!imageUrl.startsWith("data:image/") && !imageUrl.startsWith("https://")) {
+    return { error: "Invalid image format." };
+  }
+
+  // Rough size guard: base64 at 500 KB ≈ ~680 chars per KB.
+  if (imageUrl.startsWith("data:") && imageUrl.length > 680 * 500) {
+    return { error: "Image too large. Please use an image under 500 KB." };
+  }
+
+  await db.update(schema.users).set({ image: imageUrl }).where(eq(schema.users.id, user.userId));
+  revalidatePath("/dashboard/coach");
+  revalidatePath("/dashboard/coach/profile");
+  return { success: true };
+}
+
 export async function cancelSlot(formData: FormData): Promise<void> {
   const user = await requireRole("coach");
   const coachId = await coachProfileId(user.userId);
