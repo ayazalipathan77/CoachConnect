@@ -6,19 +6,7 @@ import { redirect } from "next/navigation";
 import { db, schema } from "@/server/db";
 import { requireRole } from "@/server/auth/current-user";
 import { createPaymentProvider } from "@/server/integrations/payments";
-
-/**
- * BRD §8.1 cancellation matrix (client-initiated):
- *   ≥ 48 h before session  → full refund (100%)
- *   24–48 h before session → partial refund (50%)
- *   < 24 h before session  → no refund (0%)
- */
-export function refundPercent(sessionStart: Date, cancelledAt: Date = new Date()): number {
-  const hoursUntil = (sessionStart.getTime() - cancelledAt.getTime()) / (1000 * 60 * 60);
-  if (hoursUntil >= 48) return 100;
-  if (hoursUntil >= 24) return 50;
-  return 0;
-}
+import { refundPercent } from "@/lib/cancellation";
 
 export async function cancelBooking(formData: FormData): Promise<void> {
   const user = await requireRole("client");
