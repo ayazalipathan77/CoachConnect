@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { db, schema } from "@/server/db";
 import { config } from "@/server/config";
 import { integrations } from "@/server/integrations";
@@ -43,6 +43,18 @@ export async function createBooking(input: {
     )
     .limit(1);
   if (!slot) return { ok: false, error: "This session is no longer available." };
+
+  // BRD §5.4 — free intro session cap: max 2 per calendar month per coach.
+  if (slot.feeMinor === 0) {
+    const [coachProfile] = await db
+      .select({ freeIntroUsedMonth: schema.coachProfiles.freeIntroUsedMonth })
+      .from(schema.coachProfiles)
+      .where(eq(schema.coachProfiles.id, slot.coachId))
+      .limit(1);
+    if (coachProfile && coachProfile.freeIntroUsedMonth >= 2) {
+      return { ok: false, error: "This coach has reached the limit of 2 free intro sessions this month." };
+    }
+  }
 
   const coachFee = slot.feeMinor;
   const serviceFee = serviceFeeFor(coachFee);
@@ -97,6 +109,14 @@ export async function createBooking(input: {
       updatedAt: new Date(),
     })
     .where(eq(schema.bookings.id, bookingId));
+
+  // Increment free intro counter if this was a free session.
+  if (slot.feeMinor === 0) {
+    await db
+      .update(schema.coachProfiles)
+      .set({ freeIntroUsedMonth: sql`${schema.coachProfiles.freeIntroUsedMonth} + 1` })
+      .where(eq(schema.coachProfiles.id, slot.coachId));
+  }
 
   // Fetch names needed for notifications.
   const [coachProfile] = await db

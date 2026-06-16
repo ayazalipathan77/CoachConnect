@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { and, eq, lt, gt, sql } from "drizzle-orm";
+import { and, eq, lt, gt, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, schema } from "@/server/db";
@@ -219,6 +219,84 @@ export async function updateAvatar(
   revalidatePath("/dashboard/coach");
   revalidatePath("/dashboard/coach/profile");
   return { success: true };
+}
+
+export async function editSlot(
+  _prev: SlotState,
+  formData: FormData,
+): Promise<SlotState> {
+  const user = await requireRole("coach");
+  const coachId = await coachProfileId(user.userId);
+  if (!coachId) return { error: "Coach profile not found." };
+
+  const slotId = String(formData.get("slotId") ?? "").trim();
+  if (!slotId) return { error: "Slot ID missing." };
+
+  const [existing] = await db
+    .select({ id: schema.slots.id })
+    .from(schema.slots)
+    .where(and(eq(schema.slots.id, slotId), eq(schema.slots.coachId, coachId), eq(schema.slots.status, "open")))
+    .limit(1);
+  if (!existing) return { error: "Slot not found or cannot be edited (already booked or cancelled)." };
+
+  const parsed = slotSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  const d = parsed.data;
+
+  const startAt = new Date(`${d.date}T${d.time}:00`);
+  if (Number.isNaN(startAt.getTime())) return { error: "Invalid date or time." };
+  if (startAt.getTime() < Date.now()) return { error: "Slot must be in the future." };
+
+  const feeMinor = Math.round(d.feeGBP * 100);
+  if (feeMinor !== 0 && feeMinor < config.PLATFORM_MIN_FEE_MINOR) {
+    return { error: `Minimum fee is £${(config.PLATFORM_MIN_FEE_MINOR / 100).toFixed(2)} (or free).` };
+  }
+
+  const endAt = new Date(startAt.getTime() + d.durationMin * 60_000);
+  const overlapping = await db
+    .select({ id: schema.slots.id })
+    .from(schema.slots)
+    .where(
+      and(
+        eq(schema.slots.coachId, coachId),
+        ne(schema.slots.id, slotId),
+        lt(schema.slots.startAt, endAt),
+        gt(
+          sql`${schema.slots.startAt} + ${schema.slots.durationMin} * interval '1 minute'`,
+          startAt,
+        ),
+      ),
+    )
+    .limit(1);
+
+  if (overlapping.length > 0) {
+    return { error: "You already have a slot that overlaps this time." };
+  }
+
+  let venueId = d.venueId && d.venueId !== "new" ? d.venueId : null;
+  if (d.venueId === "new" && d.newVenueName) {
+    const [v] = await db
+      .insert(schema.venues)
+      .values({ coachId, name: d.newVenueName, city: d.newVenueCity || null })
+      .returning({ id: schema.venues.id });
+    venueId = v.id;
+  }
+
+  await db
+    .update(schema.slots)
+    .set({
+      startAt,
+      durationMin: d.durationMin,
+      sessionType: d.sessionType,
+      feeMinor,
+      venueId,
+      sportId: d.sportId || null,
+      updatedAt: new Date(),
+    })
+    .where(eq(schema.slots.id, slotId));
+
+  revalidatePath("/dashboard/coach/slots");
+  redirect("/dashboard/coach/slots?edited=1");
 }
 
 export async function cancelSlot(formData: FormData): Promise<void> {

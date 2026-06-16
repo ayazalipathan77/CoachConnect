@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { format, isPast } from "date-fns";
-import { CheckCircle2, Calendar, XCircle } from "lucide-react";
+import { CheckCircle2, Calendar, XCircle, ArrowRight } from "lucide-react";
 import { requireUser } from "@/server/auth/current-user";
 import { getClientBookings } from "@/server/repositories/bookings";
 import { hasReviewed } from "@/server/repositories/reviews";
@@ -101,6 +101,7 @@ export default async function BookingsPage({
                       !reviewedSet.has(b.id)
                     }
                     alreadyReviewed={reviewedSet.has(b.id)}
+                    showBookAgain={b.status === "completed" || b.status === "confirmed"}
                   />
                 ))}
               </div>
@@ -125,11 +126,13 @@ function BookingCard({
   showReview = false,
   alreadyReviewed = false,
   showCancel = false,
+  showBookAgain = false,
 }: {
   b: Booking;
   showReview?: boolean;
   alreadyReviewed?: boolean;
   showCancel?: boolean;
+  showBookAgain?: boolean;
 }) {
   const pct = refundPercent(b.startAt);
 
@@ -177,6 +180,17 @@ function BookingCard({
       )}
       {showReview && (
         <ReviewForm bookingId={b.id} coachName={b.coachName ?? "the coach"} />
+      )}
+      {showBookAgain && (
+        <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between gap-4">
+          <p className="text-xs text-white/40">Want another session?</p>
+          <Link
+            href={`/coach/${b.coachId}`}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-brand border border-brand/30 hover:bg-brand/10 px-3 py-1.5 rounded-full transition-colors"
+          >
+            Book again <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
       )}
     </div>
   );

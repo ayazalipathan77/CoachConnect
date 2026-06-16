@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { format, isPast } from "date-fns";
-import { CalendarPlus, Clock, MapPin } from "lucide-react";
+import { CalendarPlus, Clock, MapPin, Pencil } from "lucide-react";
 import { requireRole } from "@/server/auth/current-user";
 import { db, schema } from "@/server/db";
 import { getCoachSlots } from "@/server/repositories/slots";
@@ -19,7 +19,7 @@ const STATUS_STYLE: Record<string, string> = {
 export default async function CoachSlotsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ created?: string }>;
+  searchParams: Promise<{ created?: string; edited?: string }>;
 }) {
   const [user, params] = await Promise.all([requireRole("coach"), searchParams]);
 
@@ -38,6 +38,11 @@ export default async function CoachSlotsPage({
       {params.created && (
         <div className="mb-6 flex items-center gap-3 bg-brand/10 border border-brand/20 rounded-2xl px-5 py-3.5 text-brand font-medium text-sm">
           <CalendarPlus className="w-4 h-4 shrink-0" /> Slot created — clients can now discover and book it.
+        </div>
+      )}
+      {params.edited && (
+        <div className="mb-6 flex items-center gap-3 bg-brand/10 border border-brand/20 rounded-2xl px-5 py-3.5 text-brand font-medium text-sm">
+          <Pencil className="w-4 h-4 shrink-0" /> Slot updated successfully.
         </div>
       )}
 
@@ -112,15 +117,23 @@ function SlotList({ slots, coachProfileId: _ }: { slots: Slot[]; coachProfileId:
           <div className="flex items-center gap-4">
             <span className="font-display font-bold text-xl text-brand">{gbp(slot.feeMinor)}</span>
             {slot.status === "open" && (
-              <form action={cancelSlot}>
-                <input type="hidden" name="slotId" value={slot.id} />
-                <button
-                  type="submit"
-                  className="text-xs text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 px-3 py-1.5 rounded-full transition-colors"
+              <>
+                <Link
+                  href={`/dashboard/coach/slots/${slot.id}/edit`}
+                  className="text-xs text-white/60 hover:text-brand border border-white/15 hover:border-brand/40 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1"
                 >
-                  Cancel
-                </button>
-              </form>
+                  <Pencil className="w-3 h-3" /> Edit
+                </Link>
+                <form action={cancelSlot}>
+                  <input type="hidden" name="slotId" value={slot.id} />
+                  <button
+                    type="submit"
+                    className="text-xs text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 px-3 py-1.5 rounded-full transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </form>
+              </>
             )}
           </div>
         </div>

@@ -56,6 +56,22 @@ export function AuthForm({ mode, initialRole = 'client' }: { mode: 'login' | 'si
         autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
       />
 
+      {mode === 'signup' && role === 'coach' && (
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            name="tosAccepted"
+            required
+            className="mt-0.5 w-4 h-4 accent-[var(--color-brand)] shrink-0"
+          />
+          <span className="text-sm text-white/60 leading-relaxed">
+            I agree to the{' '}
+            <a href="/terms" target="_blank" className="text-brand hover:underline">Coach Terms of Service</a>
+            {' '}and confirm I am qualified to coach in my listed sports.
+          </span>
+        </label>
+      )}
+
       {state?.error && (
         <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2.5">
           {state.error}
