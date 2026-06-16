@@ -20,11 +20,13 @@ type Props = {
     headline: string | null;
     bio: string | null;
     philosophy: string | null;
+    achievements: string | null;
     experienceYears: number;
     experienceLevel: string;
     defaultRateMinor: number | null;
     visibility: string;
     locationCity: string | null;
+    locationPostcode: string | null;
   };
 };
 
@@ -55,6 +57,9 @@ export function ProfileForm({ defaultValues: d }: Props) {
         <Field label="Coaching philosophy (optional)">
           <textarea name="philosophy" defaultValue={d.philosophy ?? ''} rows={3} placeholder="What do you believe makes a great athlete?" className={`${input} resize-none`} />
         </Field>
+        <Field label="Achievements & qualifications (optional)">
+          <textarea name="achievements" defaultValue={d.achievements ?? ''} rows={3} placeholder="e.g. UEFA B licence, Level 3 FA coaching certificate…" className={`${input} resize-none`} />
+        </Field>
       </Section>
 
       <Section title="Experience">
@@ -84,9 +89,14 @@ export function ProfileForm({ defaultValues: d }: Props) {
       </Section>
 
       <Section title="Location">
-        <Field label="City">
-          <input name="locationCity" defaultValue={d.locationCity ?? ''} placeholder="e.g. London" className={input} />
-        </Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="City">
+            <input name="locationCity" defaultValue={d.locationCity ?? ''} placeholder="e.g. London" className={input} />
+          </Field>
+          <Field label="Postcode (optional)">
+            <input name="locationPostcode" defaultValue={d.locationPostcode ?? ''} placeholder="e.g. SW1A 1AA" className={input} />
+          </Field>
+        </div>
       </Section>
 
       <button type="submit" disabled={pending} className="self-start bg-brand text-black px-6 py-3 rounded-full font-bold hover:bg-brand-dark transition-colors flex items-center gap-2 disabled:opacity-60">

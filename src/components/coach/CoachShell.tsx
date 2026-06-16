@@ -11,9 +11,13 @@ export function CoachShell({
 }) {
   return (
     <DashboardShell user={user}>
-      <div className="flex gap-8 lg:gap-12 items-start">
+      {/*
+        flex-col on mobile  → sidebar (pills) stacks above content
+        lg:flex-row on desktop → sidebar (vertical links) sits left of content
+      */}
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-12">
         <CoachSidebar />
-        <div className="flex-1 min-w-0">{children}</div>
+        <div className="flex-1 min-w-0 w-full">{children}</div>
       </div>
     </DashboardShell>
   );

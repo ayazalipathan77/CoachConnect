@@ -5,6 +5,7 @@ import { CalendarPlus, Wallet, Star, Users, CheckCircle2, XCircle } from "lucide
 import { requireRole } from "@/server/auth/current-user";
 import { db, schema } from "@/server/db";
 import { getCoachBookings } from "@/server/repositories/bookings";
+import { getCoachReviews } from "@/server/repositories/reviews";
 import { completeSession, coachCancelBooking } from "@/server/booking/complete";
 import { StatCard } from "@/components/dashboard/DashboardShell";
 import { CoachShell } from "@/components/coach/CoachShell";
@@ -22,7 +23,10 @@ export default async function CoachDashboard() {
   const completeness = profile?.completeness ?? 0;
   const status = profile?.status ?? "pending_review";
 
-  const bookings = profile ? await getCoachBookings(user.userId) : [];
+  const [bookings, recentReviews] = await Promise.all([
+    profile ? getCoachBookings(user.userId) : Promise.resolve([]),
+    profile ? getCoachReviews(profile.id, 3) : Promise.resolve([]),
+  ]);
   const upcomingBookings = bookings.filter((b) => !isPast(b.startAt) && b.status === "confirmed");
   const earningsMinor = bookings
     .filter((b) => b.status === "confirmed" || b.status === "completed")
@@ -121,8 +125,31 @@ export default async function CoachDashboard() {
           )}
         </div>
         <div className="bg-[#111111] border border-white/10 rounded-3xl p-6">
-          <h3 className="font-bold flex items-center gap-2 mb-4"><Star className="w-4 h-4 text-brand" /> Recent reviews</h3>
-          <p className="text-white/40 text-sm">Reviews appear here after sessions.</p>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold flex items-center gap-2"><Star className="w-4 h-4 text-brand" /> Recent reviews</h3>
+            {recentReviews.length > 0 && profile && (
+              <a href={`/coach/${profile.id}`} className="text-brand text-sm hover:underline">View all</a>
+            )}
+          </div>
+          {recentReviews.length === 0 ? (
+            <p className="text-white/40 text-sm">Reviews appear here after sessions.</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {recentReviews.map((r) => (
+                <div key={r.id} className="border-b border-white/5 pb-3 last:border-0 last:pb-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={`w-3.5 h-3.5 ${i < r.rating ? "fill-brand text-brand" : "text-white/20"}`} />
+                      ))}
+                    </div>
+                    <span className="text-white/30 text-xs">{r.clientName ?? "Client"}</span>
+                  </div>
+                  {r.comment && <p className="text-white/60 text-xs leading-relaxed line-clamp-2">{r.comment}</p>}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </CoachShell>

@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { and, eq } from "drizzle-orm";
+import { and, eq, lt, gt, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, schema } from "@/server/db";
@@ -15,11 +15,13 @@ const profileSchema = z.object({
   headline: z.string().max(160).optional(),
   bio: z.string().max(2000).optional(),
   philosophy: z.string().max(1000).optional(),
+  achievements: z.string().max(1000).optional(),
   experienceYears: z.coerce.number().int().min(0).max(50).optional(),
   experienceLevel: z.enum(["beginner_friendly", "intermediate", "advanced"]).optional(),
   defaultRateMinor: z.coerce.number().int().min(0).optional(),
   visibility: z.enum(["public", "unlisted", "paused"]).optional(),
   locationCity: z.string().max(100).optional(),
+  locationPostcode: z.string().max(16).optional(),
 });
 
 export async function updateCoachProfile(
@@ -39,7 +41,7 @@ export async function updateCoachProfile(
     : undefined;
 
   // Derive a simple completeness score from filled fields.
-  const fields = [d.headline, d.bio, d.locationCity, d.philosophy, d.experienceYears];
+  const fields = [d.headline, d.bio, d.locationCity, d.philosophy, d.experienceYears, d.achievements];
   const filled = fields.filter((f) => f !== undefined && String(f).trim().length > 0).length;
   const completeness = Math.min(100, 20 + Math.round((filled / fields.length) * 80));
 
@@ -49,6 +51,7 @@ export async function updateCoachProfile(
       headline: d.headline ?? null,
       bio: d.bio ?? null,
       philosophy: d.philosophy ?? null,
+      achievements: d.achievements ?? null,
       experienceYears: d.experienceYears ?? 0,
       experienceLevel: d.experienceLevel,
       defaultRateMinor: rateMinor ?? null,
@@ -60,7 +63,7 @@ export async function updateCoachProfile(
 
   await db
     .update(schema.users)
-    .set({ locationCity: d.locationCity ?? null })
+    .set({ locationCity: d.locationCity ?? null, locationPostcode: d.locationPostcode ?? null })
     .where(eq(schema.users.id, user.userId));
 
   revalidatePath("/dashboard/coach");
@@ -119,6 +122,27 @@ export async function createSlot(
       .values({ coachId, name: d.newVenueName, city: d.newVenueCity || null })
       .returning({ id: schema.venues.id });
     venueId = v.id;
+  }
+
+  // Overlap check: new slot [startAt, endAt) must not overlap any existing open slot.
+  const endAt = new Date(startAt.getTime() + d.durationMin * 60_000);
+  const overlapping = await db
+    .select({ id: schema.slots.id })
+    .from(schema.slots)
+    .where(
+      and(
+        eq(schema.slots.coachId, coachId),
+        lt(schema.slots.startAt, endAt),
+        gt(
+          sql`${schema.slots.startAt} + ${schema.slots.durationMin} * interval '1 minute'`,
+          startAt,
+        ),
+      ),
+    )
+    .limit(1);
+
+  if (overlapping.length > 0) {
+    return { error: "You already have a slot that overlaps this time. Please choose a different time." };
   }
 
   await db.insert(schema.slots).values({

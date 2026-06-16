@@ -12,6 +12,7 @@ const reviewSchema = z.object({
   bookingId: z.string().min(1),
   rating: z.coerce.number().int().min(1).max(5),
   comment: z.string().max(1000).optional(),
+  tags: z.string().optional(),
 });
 
 export async function leaveReview(
@@ -59,13 +60,19 @@ export async function leaveReview(
     .limit(1);
   if (existing.length > 0) return { error: "You have already reviewed this session." };
 
+  let tags: string[] = [];
+  if (d.tags) {
+    try { tags = JSON.parse(d.tags); } catch { tags = []; }
+    if (!Array.isArray(tags)) tags = [];
+  }
+
   await db.insert(schema.reviews).values({
     bookingId: d.bookingId,
     clientId: client.id,
     coachId: booking.coachId,
     rating: d.rating,
     comment: d.comment || null,
-    tags: [],
+    tags,
   });
 
   // Update the coach's aggregate rating.
@@ -87,5 +94,39 @@ export async function leaveReview(
 
   revalidatePath("/bookings");
   revalidatePath(`/coach/${booking.coachId}`);
+  return { success: true };
+}
+
+export async function respondToReview(
+  _prev: ReviewState,
+  formData: FormData,
+): Promise<ReviewState> {
+  const user = await requireRole("coach");
+
+  const reviewId = String(formData.get("reviewId") ?? "").trim();
+  const response = String(formData.get("coachResponse") ?? "").trim().slice(0, 1000);
+  if (!reviewId) return { error: "Review not found." };
+
+  const [coachProfile] = await db
+    .select({ id: schema.coachProfiles.id })
+    .from(schema.coachProfiles)
+    .where(eq(schema.coachProfiles.userId, user.userId))
+    .limit(1);
+  if (!coachProfile) return { error: "Coach profile not found." };
+
+  const [review] = await db
+    .select({ id: schema.reviews.id, coachId: schema.reviews.coachId })
+    .from(schema.reviews)
+    .where(and(eq(schema.reviews.id, reviewId), eq(schema.reviews.coachId, coachProfile.id)))
+    .limit(1);
+  if (!review) return { error: "Review not found or not yours." };
+
+  await db
+    .update(schema.reviews)
+    .set({ coachResponse: response || null })
+    .where(eq(schema.reviews.id, reviewId));
+
+  revalidatePath("/dashboard/coach");
+  revalidatePath(`/coach/${coachProfile.id}`);
   return { success: true };
 }

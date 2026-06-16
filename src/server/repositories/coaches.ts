@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, or, ilike, desc, asc, gt } from "drizzle-orm";
+import { and, eq, or, ilike, desc, asc, gt, gte, lte, SQL } from "drizzle-orm";
 import { db, schema } from "@/server/db";
 
 export type CoachSort = "relevance" | "price" | "rating" | "reviews";
@@ -23,8 +23,11 @@ export async function listCoaches(opts: {
   q?: string;
   sportSlug?: string;
   sort?: CoachSort;
+  maxRateMinor?: number;
+  minRating?: number;
+  experienceLevel?: string;
 } = {}): Promise<CoachCard[]> {
-  const filters = [
+  const filters: SQL[] = [
     eq(schema.coachProfiles.status, "active"),
     eq(schema.coachProfiles.visibility, "public"),
   ];
@@ -37,6 +40,15 @@ export async function listCoaches(opts: {
         ilike(schema.users.locationCity, like),
       )!,
     );
+  }
+  if (opts.maxRateMinor != null) filters.push(lte(schema.coachProfiles.defaultRateMinor, opts.maxRateMinor));
+  if (opts.minRating != null) filters.push(gte(schema.coachProfiles.ratingAvg, opts.minRating));
+  if (opts.experienceLevel) {
+    const validLevels = ["beginner_friendly", "intermediate", "advanced", "elite"] as const;
+    type Level = typeof validLevels[number];
+    if ((validLevels as readonly string[]).includes(opts.experienceLevel)) {
+      filters.push(eq(schema.coachProfiles.experienceLevel, opts.experienceLevel as Level));
+    }
   }
 
   const orderBy =
@@ -103,6 +115,8 @@ export async function getCoachById(id: string) {
       city: schema.users.locationCity,
       headline: schema.coachProfiles.headline,
       bio: schema.coachProfiles.bio,
+      philosophy: schema.coachProfiles.philosophy,
+      achievements: schema.coachProfiles.achievements,
       experienceYears: schema.coachProfiles.experienceYears,
       experienceLevel: schema.coachProfiles.experienceLevel,
       rateMinor: schema.coachProfiles.defaultRateMinor,

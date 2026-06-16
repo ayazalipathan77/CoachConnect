@@ -2,12 +2,13 @@ import "server-only";
 import { and, desc, eq } from "drizzle-orm";
 import { db, schema } from "@/server/db";
 
-export async function getCoachReviews(coachId: string) {
+export async function getCoachReviews(coachId: string, limit = 20) {
   return db
     .select({
       id: schema.reviews.id,
       rating: schema.reviews.rating,
       comment: schema.reviews.comment,
+      tags: schema.reviews.tags,
       coachResponse: schema.reviews.coachResponse,
       createdAt: schema.reviews.createdAt,
       clientName: schema.users.name,
@@ -17,7 +18,7 @@ export async function getCoachReviews(coachId: string) {
     .innerJoin(schema.users, eq(schema.users.id, schema.clientProfiles.userId))
     .where(and(eq(schema.reviews.coachId, coachId), eq(schema.reviews.hidden, false)))
     .orderBy(desc(schema.reviews.createdAt))
-    .limit(20);
+    .limit(limit);
 }
 
 export async function hasReviewed(bookingId: string, clientProfileId: string) {

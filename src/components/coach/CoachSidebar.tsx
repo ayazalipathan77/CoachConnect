@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, CalendarDays, Clock, User } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Clock, User, Star } from 'lucide-react';
 
 const NAV = [
   { label: 'Overview', href: '/dashboard/coach', icon: LayoutDashboard, exact: true },
   { label: 'Bookings', href: '/dashboard/coach/bookings', icon: CalendarDays, exact: false },
   { label: 'Slots', href: '/dashboard/coach/slots', icon: Clock, exact: false },
   { label: 'Profile', href: '/dashboard/coach/profile', icon: User, exact: false },
+  { label: 'Reviews', href: '/dashboard/coach/reviews', icon: Star, exact: false },
 ];
 
 export function CoachSidebar() {
@@ -19,9 +20,10 @@ export function CoachSidebar() {
   }
 
   return (
-    <>
-      {/* Mobile: horizontal pill tabs */}
-      <nav className="lg:hidden flex gap-2 overflow-x-auto pb-1 no-scrollbar mb-8">
+    // Single wrapper — not a fragment — so it's always ONE flex child in the parent row
+    <div className="w-full lg:w-52 lg:shrink-0">
+      {/* Mobile: horizontal scrollable pill tabs */}
+      <nav className="lg:hidden flex gap-2 overflow-x-auto pb-2 no-scrollbar w-full">
         {NAV.map((item) => {
           const active = isActive(item.href, item.exact);
           return (
@@ -41,8 +43,8 @@ export function CoachSidebar() {
         })}
       </nav>
 
-      {/* Desktop: vertical sidebar */}
-      <aside className="hidden lg:flex flex-col gap-1 w-52 shrink-0 pt-1">
+      {/* Desktop: vertical sidebar links */}
+      <aside className="hidden lg:flex flex-col gap-1 pt-1">
         {NAV.map((item) => {
           const active = isActive(item.href, item.exact);
           return (
@@ -61,6 +63,6 @@ export function CoachSidebar() {
           );
         })}
       </aside>
-    </>
+    </div>
   );
 }

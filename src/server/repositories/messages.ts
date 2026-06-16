@@ -1,10 +1,23 @@
 import "server-only";
-import { and, asc, desc, eq, isNull, ne, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNull, ne, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db, schema } from "@/server/db";
 
 const coachUser = alias(schema.users, "coach_user");
 const clientUser = alias(schema.users, "client_user");
+
+export async function countConversations(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ total: count(schema.conversations.id) })
+    .from(schema.conversations)
+    .where(
+      or(
+        eq(schema.conversations.coachUserId, userId),
+        eq(schema.conversations.clientUserId, userId),
+      ),
+    );
+  return row?.total ?? 0;
+}
 
 export async function getOrCreateConversation(coachUserId: string, clientUserId: string) {
   const [existing] = await db
@@ -26,7 +39,9 @@ export async function getOrCreateConversation(coachUserId: string, clientUserId:
   return created.id;
 }
 
-export async function getConversations(userId: string) {
+export const CONVERSATIONS_PAGE_SIZE = 10;
+
+export async function getConversations(userId: string, limit = CONVERSATIONS_PAGE_SIZE, offset = 0) {
   return db
     .select({
       id: schema.conversations.id,
@@ -45,7 +60,9 @@ export async function getConversations(userId: string) {
         eq(schema.conversations.clientUserId, userId),
       ),
     )
-    .orderBy(desc(schema.conversations.lastMessageAt));
+    .orderBy(desc(schema.conversations.lastMessageAt))
+    .limit(limit)
+    .offset(offset);
 }
 
 export async function getConversation(conversationId: string) {

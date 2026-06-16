@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, schema } from "@/server/db";
 import { requireUser } from "@/server/auth/current-user";
-import { getOrCreateConversation } from "@/server/repositories/messages";
+import { getOrCreateConversation, getConversations, CONVERSATIONS_PAGE_SIZE } from "@/server/repositories/messages";
 import { notifyNewMessage } from "@/server/notifications/service";
 
 export async function startConversation(formData: FormData): Promise<void> {
@@ -59,4 +59,9 @@ export async function sendMessage(formData: FormData): Promise<void> {
   });
 
   revalidatePath(`/messages/${conversationId}`);
+}
+
+export async function loadMoreConversations(offset: number) {
+  const user = await requireUser();
+  return getConversations(user.userId, CONVERSATIONS_PAGE_SIZE, offset);
 }

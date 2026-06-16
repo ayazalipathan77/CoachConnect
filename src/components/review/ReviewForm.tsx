@@ -4,10 +4,26 @@ import { useActionState, useState } from 'react';
 import { Star, Loader2, CheckCircle2 } from 'lucide-react';
 import { leaveReview, type ReviewState } from '@/server/review/actions';
 
+const REVIEW_TAGS = [
+  'Punctual',
+  'Great communicator',
+  'Very knowledgeable',
+  'Encouraging',
+  'Well organised',
+  'Great with beginners',
+];
+
 export function ReviewForm({ bookingId, coachName }: { bookingId: string; coachName: string }) {
   const [state, action, pending] = useActionState<ReviewState, FormData>(leaveReview, undefined);
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  function toggleTag(tag: string) {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
+  }
 
   if (state?.success) {
     return (
@@ -22,6 +38,7 @@ export function ReviewForm({ bookingId, coachName }: { bookingId: string; coachN
       <p className="text-xs text-white/50 font-medium">Rate your session with {coachName}</p>
       <input type="hidden" name="bookingId" value={bookingId} />
       <input type="hidden" name="rating" value={rating} />
+      <input type="hidden" name="tags" value={JSON.stringify(selectedTags)} />
 
       {/* Star picker */}
       <div className="flex gap-1">
@@ -39,6 +56,24 @@ export function ReviewForm({ bookingId, coachName }: { bookingId: string; coachN
                 n <= (hover || rating) ? 'fill-brand text-brand' : 'text-white/20'
               }`}
             />
+          </button>
+        ))}
+      </div>
+
+      {/* Tags */}
+      <div className="flex flex-wrap gap-2">
+        {REVIEW_TAGS.map((tag) => (
+          <button
+            key={tag}
+            type="button"
+            onClick={() => toggleTag(tag)}
+            className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors ${
+              selectedTags.includes(tag)
+                ? 'bg-brand/15 border-brand/40 text-brand'
+                : 'bg-white/5 border-white/10 text-white/50 hover:text-white hover:border-white/30'
+            }`}
+          >
+            {tag}
           </button>
         ))}
       </div>

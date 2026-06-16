@@ -70,6 +70,20 @@ export default async function CoachProfilePage({
               <p className="text-white/70 text-lg leading-relaxed max-w-2xl">{coach.bio}</p>
             </section>
 
+            {coach.achievements && (
+              <section className="mt-8">
+                <h2 className="font-display font-bold text-xl mb-3">Achievements & qualifications</h2>
+                <p className="text-white/60 leading-relaxed max-w-2xl whitespace-pre-line">{coach.achievements}</p>
+              </section>
+            )}
+
+            {coach.philosophy && (
+              <section className="mt-8">
+                <h2 className="font-display font-bold text-xl mb-3">Coaching philosophy</h2>
+                <p className="text-white/60 leading-relaxed max-w-2xl italic">"{coach.philosophy}"</p>
+              </section>
+            )}
+
             <section className="mt-10 flex items-center gap-3 text-sm text-white/50 bg-[#111111] border border-white/10 rounded-2xl px-5 py-4 max-w-2xl">
               <ShieldCheck className="w-5 h-5 text-brand shrink-0" />
               Payments are held in escrow and only released to the coach after your session completes.
@@ -107,7 +121,16 @@ export default async function CoachProfilePage({
                         <span className="text-white/30 text-xs">{format(r.createdAt, "d MMM yyyy")}</span>
                       </div>
                       <p className="font-semibold text-sm">{r.clientName ?? "Anonymous"}</p>
-                      {r.comment && <p className="text-white/60 text-sm mt-1 leading-relaxed">{r.comment}</p>}
+                      {Array.isArray(r.tags) && r.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {(r.tags as string[]).map((tag) => (
+                            <span key={tag} className="text-xs bg-brand/10 border border-brand/20 text-brand px-2.5 py-0.5 rounded-full">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {r.comment && <p className="text-white/60 text-sm mt-2 leading-relaxed">{r.comment}</p>}
                       {r.coachResponse && (
                         <div className="mt-3 pl-3 border-l-2 border-brand/30 text-sm text-white/50">
                           <span className="font-medium text-brand">Coach reply: </span>{r.coachResponse}

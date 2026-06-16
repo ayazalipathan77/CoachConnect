@@ -17,6 +17,7 @@ export default async function CoachProfilePage() {
         headline: schema.coachProfiles.headline,
         bio: schema.coachProfiles.bio,
         philosophy: schema.coachProfiles.philosophy,
+        achievements: schema.coachProfiles.achievements,
         experienceYears: schema.coachProfiles.experienceYears,
         experienceLevel: schema.coachProfiles.experienceLevel,
         defaultRateMinor: schema.coachProfiles.defaultRateMinor,
@@ -28,7 +29,7 @@ export default async function CoachProfilePage() {
       .limit(1)
       .then((r) => r[0] ?? null),
     db
-      .select({ locationCity: schema.users.locationCity, image: schema.users.image })
+      .select({ locationCity: schema.users.locationCity, locationPostcode: schema.users.locationPostcode, image: schema.users.image })
       .from(schema.users)
       .where(eq(schema.users.id, user.userId))
       .limit(1)
@@ -81,11 +82,13 @@ export default async function CoachProfilePage() {
                 headline: profile?.headline ?? null,
                 bio: profile?.bio ?? null,
                 philosophy: profile?.philosophy ?? null,
+                achievements: profile?.achievements ?? null,
                 experienceYears: profile?.experienceYears ?? 0,
                 experienceLevel: profile?.experienceLevel ?? "intermediate",
                 defaultRateMinor: profile?.defaultRateMinor ?? null,
                 visibility: profile?.visibility ?? "public",
                 locationCity: userData?.locationCity ?? null,
+                locationPostcode: userData?.locationPostcode ?? null,
               }}
             />
           </div>

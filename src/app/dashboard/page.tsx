@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { format, isPast } from "date-fns";
-import { Search, Calendar, Star } from "lucide-react";
+import { Search, Calendar, Star, User } from "lucide-react";
 import { requireUser } from "@/server/auth/current-user";
 import { getClientBookings } from "@/server/repositories/bookings";
 import { DashboardShell, StatCard } from "@/components/dashboard/DashboardShell";
@@ -71,8 +71,11 @@ export default async function AthleteDashboard() {
           )}
         </div>
         <div className="bg-[#111111] border border-white/10 rounded-3xl p-6">
-          <h3 className="font-bold flex items-center gap-2 mb-4"><Star className="w-4 h-4 text-brand" /> Leave a review</h3>
-          <p className="text-white/40 text-sm">Reviews appear here after your sessions.</p>
+          <h3 className="font-bold flex items-center gap-2 mb-4"><User className="w-4 h-4 text-brand" /> My profile</h3>
+          <p className="text-white/40 text-sm mb-4">Update your name, location, and preferred sports.</p>
+          <Link href="/dashboard/profile" className="inline-flex items-center gap-2 text-sm font-bold text-brand hover:text-brand-dark transition-colors">
+            Edit profile →
+          </Link>
         </div>
       </div>
     </DashboardShell>

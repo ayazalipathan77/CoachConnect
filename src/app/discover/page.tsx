@@ -20,7 +20,7 @@ const UK_CENTER: [number, number] = [54.0, -2.5];
 export default async function DiscoverPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; sport?: string; sort?: string; view?: string; near?: string }>;
+  searchParams: Promise<{ q?: string; sport?: string; sort?: string; view?: string; near?: string; maxPrice?: string; minRating?: string; level?: string }>;
 }) {
   const sp = await searchParams;
   const isMapView = sp.view === "map";
@@ -30,8 +30,18 @@ export default async function DiscoverPage({
   // Geocode the `near` query if provided (server-side, deterministic mock).
   const nearGeo = sp.near ? await maps.geocode(sp.near) : null;
 
+  const maxRateMinor = sp.maxPrice ? Math.round(parseFloat(sp.maxPrice) * 100) : undefined;
+  const minRating = sp.minRating ? parseFloat(sp.minRating) : undefined;
+
   const [coaches, sports] = await Promise.all([
-    listCoaches({ q: sp.q, sportSlug: sp.sport, sort: sp.sort as CoachSort }),
+    listCoaches({
+      q: sp.q,
+      sportSlug: sp.sport,
+      sort: sp.sort as CoachSort,
+      maxRateMinor,
+      minRating,
+      experienceLevel: sp.level,
+    }),
     db
       .select({ name: schema.sports.name, slug: schema.sports.slug })
       .from(schema.sports)
@@ -111,6 +121,9 @@ export default async function DiscoverPage({
           sort={sp.sort ?? "relevance"}
           view={sp.view ?? "grid"}
           near={sp.near}
+          maxPrice={sp.maxPrice}
+          minRating={sp.minRating}
+          level={sp.level}
         />
 
         {isMapView ? (

@@ -13,6 +13,9 @@ export function DiscoverControls({
   sort = 'relevance',
   view = 'grid',
   near = '',
+  maxPrice = '',
+  minRating = '',
+  level = '',
 }: {
   sports: SportOpt[];
   q?: string;
@@ -20,19 +23,25 @@ export function DiscoverControls({
   sort?: string;
   view?: string;
   near?: string;
+  maxPrice?: string;
+  minRating?: string;
+  level?: string;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState(q);
   const [nearQuery, setNearQuery] = useState(near);
 
-  function navigate(next: Partial<{ q: string; sport: string; sort: string; view: string; near: string }>) {
+  function navigate(next: Partial<{ q: string; sport: string; sort: string; view: string; near: string; maxPrice: string; minRating: string; level: string }>) {
     const params = new URLSearchParams();
-    const merged = { q: query, sport, sort, view, near: nearQuery, ...next };
+    const merged = { q: query, sport, sort, view, near: nearQuery, maxPrice, minRating, level, ...next };
     if (merged.q) params.set('q', merged.q);
     if (merged.sport) params.set('sport', merged.sport);
     if (merged.sort && merged.sort !== 'relevance') params.set('sort', merged.sort);
     if (merged.view && merged.view !== 'grid') params.set('view', merged.view);
     if (merged.near) params.set('near', merged.near);
+    if (merged.maxPrice) params.set('maxPrice', merged.maxPrice);
+    if (merged.minRating) params.set('minRating', merged.minRating);
+    if (merged.level) params.set('level', merged.level);
     router.push(`/discover${params.toString() ? `?${params}` : ''}`);
   }
 
@@ -69,11 +78,45 @@ export function DiscoverControls({
         <select
           value={sort}
           onChange={(e) => navigate({ sort: e.target.value })}
-          className="bg-surface border border-white/10 rounded-full px-5 py-3.5 text-white text-sm focus:outline-none focus:border-brand md:w-44"
+          className="bg-surface border border-white/10 rounded-full px-5 py-3.5 text-white text-sm focus:outline-none focus:border-brand md:w-44 [color-scheme:dark]"
         >
           <option value="relevance">Highest rated</option>
           <option value="price">Lowest price</option>
           <option value="reviews">Most reviewed</option>
+        </select>
+
+        <select
+          value={maxPrice}
+          onChange={(e) => navigate({ maxPrice: e.target.value })}
+          className="bg-surface border border-white/10 rounded-full px-5 py-3.5 text-white text-sm focus:outline-none focus:border-brand md:w-36 [color-scheme:dark]"
+        >
+          <option value="">Any price</option>
+          <option value="30">Up to £30/hr</option>
+          <option value="50">Up to £50/hr</option>
+          <option value="75">Up to £75/hr</option>
+          <option value="100">Up to £100/hr</option>
+        </select>
+
+        <select
+          value={minRating}
+          onChange={(e) => navigate({ minRating: e.target.value })}
+          className="bg-surface border border-white/10 rounded-full px-5 py-3.5 text-white text-sm focus:outline-none focus:border-brand md:w-36 [color-scheme:dark]"
+        >
+          <option value="">Any rating</option>
+          <option value="4">4+ stars</option>
+          <option value="4.5">4.5+ stars</option>
+          <option value="5">5 stars</option>
+        </select>
+
+        <select
+          value={level}
+          onChange={(e) => navigate({ level: e.target.value })}
+          className="bg-surface border border-white/10 rounded-full px-5 py-3.5 text-white text-sm focus:outline-none focus:border-brand md:w-44 [color-scheme:dark]"
+        >
+          <option value="">All levels</option>
+          <option value="beginner_friendly">Beginner-friendly</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
         </select>
 
         {/* Grid / Map toggle */}

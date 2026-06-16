@@ -1,8 +1,10 @@
 import "server-only";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { db, schema } from "@/server/db";
 
-export async function getNotifications(userId: string, limit = 40) {
+export const NOTIFICATIONS_PAGE_SIZE = 10;
+
+export async function getNotifications(userId: string, limit = NOTIFICATIONS_PAGE_SIZE, offset = 0) {
   return db
     .select({
       id: schema.notifications.id,
@@ -16,7 +18,16 @@ export async function getNotifications(userId: string, limit = 40) {
     .from(schema.notifications)
     .where(and(eq(schema.notifications.userId, userId), eq(schema.notifications.channel, "in_app")))
     .orderBy(desc(schema.notifications.createdAt))
-    .limit(limit);
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function countNotifications(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ total: count(schema.notifications.id) })
+    .from(schema.notifications)
+    .where(and(eq(schema.notifications.userId, userId), eq(schema.notifications.channel, "in_app")));
+  return row?.total ?? 0;
 }
 
 export async function countUnread(userId: string): Promise<number> {
