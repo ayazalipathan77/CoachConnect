@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { format, isPast } from "date-fns";
-import { CheckCircle2, Calendar } from "lucide-react";
+import { CheckCircle2, Calendar, XCircle } from "lucide-react";
 import { requireUser } from "@/server/auth/current-user";
 import { getClientBookings } from "@/server/repositories/bookings";
 import { hasReviewed } from "@/server/repositories/reviews";
+import { cancelBooking, refundPercent } from "@/server/booking/cancel";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { ReviewForm } from "@/components/review/ReviewForm";
 import { gbp } from "@/lib/money";
@@ -21,11 +22,11 @@ const STATUS_STYLE: Record<string, string> = {
 export default async function BookingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ booked?: string }>;
+  searchParams: Promise<{ booked?: string; cancelled?: string }>;
 }) {
   const user = await requireUser();
   if (user.role === "coach") redirect("/dashboard/coach");
-  const { booked } = await searchParams;
+  const { booked, cancelled } = await searchParams;
   const bookings = await getClientBookings(user.userId);
 
   const upcoming = bookings.filter((b) => !isPast(b.startAt));
@@ -54,9 +55,15 @@ export default async function BookingsPage({
       <p className="text-white/50 mb-8">Manage your upcoming and past sessions.</p>
 
       {booked && (
-        <div className="mb-8 flex items-center gap-3 bg-brand/10 border border-brand/30 text-brand rounded-2xl px-5 py-4">
+        <div className="mb-6 flex items-center gap-3 bg-brand/10 border border-brand/30 text-brand rounded-2xl px-5 py-4">
           <CheckCircle2 className="w-5 h-5" />
           <span className="font-medium">Booking confirmed! A confirmation has been sent to your email.</span>
+        </div>
+      )}
+      {cancelled && (
+        <div className="mb-6 flex items-center gap-3 bg-white/5 border border-white/10 text-white/60 rounded-2xl px-5 py-4">
+          <XCircle className="w-5 h-5 shrink-0" />
+          <span className="font-medium">Booking cancelled. Any eligible refund will be processed within 5–10 business days.</span>
         </div>
       )}
 
@@ -75,7 +82,7 @@ export default async function BookingsPage({
               <h2 className="font-display font-bold text-xl mb-4">Upcoming</h2>
               <div className="flex flex-col gap-3">
                 {upcoming.map((b) => (
-                  <BookingCard key={b.id} b={b} />
+                  <BookingCard key={b.id} b={b} showCancel={b.status === "confirmed"} />
                 ))}
               </div>
             </section>
@@ -106,15 +113,25 @@ export default async function BookingsPage({
 
 type Booking = Awaited<ReturnType<typeof getClientBookings>>[number];
 
+const REFUND_LABEL: Record<number, string> = {
+  100: "Full refund if cancelled now",
+  50: "50% refund if cancelled now",
+  0: "No refund — within 24 h of session",
+};
+
 function BookingCard({
   b,
   showReview = false,
   alreadyReviewed = false,
+  showCancel = false,
 }: {
   b: Booking;
   showReview?: boolean;
   alreadyReviewed?: boolean;
+  showCancel?: boolean;
 }) {
+  const pct = refundPercent(b.startAt);
+
   return (
     <div className="bg-[#111111] border border-white/10 rounded-2xl p-5">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -138,6 +155,22 @@ function BookingCard({
         </div>
       </div>
 
+      {showCancel && (
+        <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between gap-4 flex-wrap">
+          <p className={`text-xs ${pct === 0 ? "text-red-400" : pct === 50 ? "text-amber-400" : "text-brand"}`}>
+            {REFUND_LABEL[pct]}
+          </p>
+          <form action={cancelBooking}>
+            <input type="hidden" name="bookingId" value={b.id} />
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              <XCircle className="w-3.5 h-3.5" /> Cancel booking
+            </button>
+          </form>
+        </div>
+      )}
       {alreadyReviewed && (
         <p className="mt-3 pt-3 border-t border-white/10 text-xs text-white/40">You reviewed this session.</p>
       )}
