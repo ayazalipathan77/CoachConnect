@@ -1,8 +1,11 @@
 import Link from 'next/link';
-import { Bell, LogOut, MessageSquare } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { Logo } from '@/components/landing/Logo';
 import { logout } from '@/server/auth/actions';
-import { countUnread } from '@/server/repositories/notifications';
+import { countUnread, getNotifications } from '@/server/repositories/notifications';
+import { getConversations } from '@/server/repositories/messages';
+import { NotifDropdown } from '@/components/dashboard/NotifDropdown';
+import { MessageDropdown } from '@/components/dashboard/MessageDropdown';
 import type { SessionPayload } from '@/server/auth/session';
 
 export async function DashboardShell({
@@ -12,7 +15,11 @@ export async function DashboardShell({
   user: SessionPayload;
   children: React.ReactNode;
 }) {
-  const unreadCount = await countUnread(user.userId);
+  const [unreadCount, notifications, conversations] = await Promise.all([
+    countUnread(user.userId),
+    getNotifications(user.userId, 5, 0),
+    getConversations(user.userId, 5, 0),
+  ]);
 
   return (
     <div className="min-h-screen bg-[#050505] text-white">
@@ -20,17 +27,8 @@ export async function DashboardShell({
         <div className="w-full flex items-center justify-between">
           <Link href="/"><Logo /></Link>
           <div className="flex items-center gap-4">
-            <Link href="/messages" className="text-white/50 hover:text-brand transition-colors" title="Messages">
-              <MessageSquare className="w-5 h-5" />
-            </Link>
-            <Link href="/notifications" className="relative text-white/50 hover:text-brand transition-colors" title="Notifications">
-              <Bell className="w-5 h-5" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-brand text-black text-[10px] font-bold flex items-center justify-center leading-none">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
-              )}
-            </Link>
+            <MessageDropdown items={conversations} currentUserId={user.userId} />
+            <NotifDropdown items={notifications} unreadCount={unreadCount} />
             <span className="hidden sm:inline-flex items-center gap-2 text-sm text-white/60">
               <span className="px-2.5 py-1 rounded-full bg-brand/10 text-brand text-xs font-bold uppercase tracking-wider border border-brand/20">
                 {user.role}

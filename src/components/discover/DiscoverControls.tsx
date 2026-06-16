@@ -1,8 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { LayoutGrid, Map, Navigation, Search } from 'lucide-react';
+import { useState } from 'react';
+import { ThemedSelect } from '@/components/ui/ThemedSelect';
+import { SportCombobox } from '@/components/ui/SportCombobox';
 
 type SportOpt = { name: string; slug: string };
 
@@ -46,13 +48,14 @@ export function DiscoverControls({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col md:flex-row gap-4">
+    <div className="flex flex-col gap-4">
+      {/* Row 1: search + near + view toggle */}
+      <div className="flex flex-col md:flex-row gap-3">
         <form
           className="relative flex-1"
           onSubmit={(e) => { e.preventDefault(); navigate({ q: query }); }}
         >
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40 pointer-events-none" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -61,12 +64,11 @@ export function DiscoverControls({
           />
         </form>
 
-        {/* Proximity filter — only relevant in map view */}
         <form
-          className="relative md:w-56"
+          className="relative md:w-52"
           onSubmit={(e) => { e.preventDefault(); navigate({ near: nearQuery, view: 'map' }); }}
         >
-          <Navigation className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+          <Navigation className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40 pointer-events-none" />
           <input
             value={nearQuery}
             onChange={(e) => setNearQuery(e.target.value)}
@@ -74,50 +76,6 @@ export function DiscoverControls({
             className="w-full bg-surface border border-white/10 rounded-full py-3.5 pl-12 pr-4 text-white placeholder:text-white/40 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
           />
         </form>
-
-        <select
-          value={sort}
-          onChange={(e) => navigate({ sort: e.target.value })}
-          className="bg-surface border border-white/10 rounded-full px-5 py-3.5 text-white text-sm focus:outline-none focus:border-brand md:w-44 [color-scheme:dark]"
-        >
-          <option value="relevance">Highest rated</option>
-          <option value="price">Lowest price</option>
-          <option value="reviews">Most reviewed</option>
-        </select>
-
-        <select
-          value={maxPrice}
-          onChange={(e) => navigate({ maxPrice: e.target.value })}
-          className="bg-surface border border-white/10 rounded-full px-5 py-3.5 text-white text-sm focus:outline-none focus:border-brand md:w-36 [color-scheme:dark]"
-        >
-          <option value="">Any price</option>
-          <option value="30">Up to £30/hr</option>
-          <option value="50">Up to £50/hr</option>
-          <option value="75">Up to £75/hr</option>
-          <option value="100">Up to £100/hr</option>
-        </select>
-
-        <select
-          value={minRating}
-          onChange={(e) => navigate({ minRating: e.target.value })}
-          className="bg-surface border border-white/10 rounded-full px-5 py-3.5 text-white text-sm focus:outline-none focus:border-brand md:w-36 [color-scheme:dark]"
-        >
-          <option value="">Any rating</option>
-          <option value="4">4+ stars</option>
-          <option value="4.5">4.5+ stars</option>
-          <option value="5">5 stars</option>
-        </select>
-
-        <select
-          value={level}
-          onChange={(e) => navigate({ level: e.target.value })}
-          className="bg-surface border border-white/10 rounded-full px-5 py-3.5 text-white text-sm focus:outline-none focus:border-brand md:w-44 [color-scheme:dark]"
-        >
-          <option value="">All levels</option>
-          <option value="beginner_friendly">Beginner-friendly</option>
-          <option value="intermediate">Intermediate</option>
-          <option value="advanced">Advanced</option>
-        </select>
 
         {/* Grid / Map toggle */}
         <div className="flex rounded-full border border-white/10 overflow-hidden shrink-0">
@@ -136,27 +94,67 @@ export function DiscoverControls({
         </div>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-        <Pill active={!sport} onClick={() => navigate({ sport: '' })}>All sports</Pill>
-        {sports.map((s) => (
-          <Pill key={s.slug} active={sport === s.slug} onClick={() => navigate({ sport: s.slug })}>
-            {s.name}
-          </Pill>
-        ))}
+      {/* Row 2: sport autocomplete + filter dropdowns */}
+      <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+        <SportCombobox
+          sports={sports}
+          value={sport}
+          onChange={(s) => navigate({ sport: s })}
+          className="sm:w-52"
+        />
+
+        <ThemedSelect
+          value={sort}
+          onChange={(v) => navigate({ sort: v })}
+          options={[
+            { value: 'relevance', label: 'Highest rated' },
+            { value: 'price', label: 'Lowest price' },
+            { value: 'reviews', label: 'Most reviewed' },
+          ]}
+          placeholder="Sort by"
+          className="sm:w-44"
+        />
+
+        <ThemedSelect
+          value={maxPrice}
+          onChange={(v) => navigate({ maxPrice: v })}
+          options={[
+            { value: '', label: 'Any price' },
+            { value: '30', label: 'Up to £30/hr' },
+            { value: '50', label: 'Up to £50/hr' },
+            { value: '75', label: 'Up to £75/hr' },
+            { value: '100', label: 'Up to £100/hr' },
+          ]}
+          placeholder="Any price"
+          className="sm:w-40"
+        />
+
+        <ThemedSelect
+          value={minRating}
+          onChange={(v) => navigate({ minRating: v })}
+          options={[
+            { value: '', label: 'Any rating' },
+            { value: '4', label: '4+ stars' },
+            { value: '4.5', label: '4.5+ stars' },
+            { value: '5', label: '5 stars only' },
+          ]}
+          placeholder="Any rating"
+          className="sm:w-36"
+        />
+
+        <ThemedSelect
+          value={level}
+          onChange={(v) => navigate({ level: v })}
+          options={[
+            { value: '', label: 'All levels' },
+            { value: 'beginner_friendly', label: 'Beginner-friendly' },
+            { value: 'intermediate', label: 'Intermediate' },
+            { value: 'advanced', label: 'Advanced' },
+          ]}
+          placeholder="All levels"
+          className="sm:w-44"
+        />
       </div>
     </div>
-  );
-}
-
-function Pill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`whitespace-nowrap px-5 py-2.5 rounded-full font-bold text-sm transition-all ${
-        active ? 'bg-brand text-black' : 'bg-surface border border-white/10 text-white/70 hover:text-white hover:bg-white/5'
-      }`}
-    >
-      {children}
-    </button>
   );
 }

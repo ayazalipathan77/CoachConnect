@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { updateCoachProfile, type ProfileState } from '@/server/coach/actions';
+import { ThemedSelect } from '@/components/ui/ThemedSelect';
 
 const EXPERIENCE_LEVELS = [
   { value: 'beginner_friendly', label: 'Beginner-friendly' },
@@ -68,9 +69,11 @@ export function ProfileForm({ defaultValues: d }: Props) {
             <input type="number" name="experienceYears" min={0} max={50} defaultValue={d.experienceYears} className={input} />
           </Field>
           <Field label="Level focus">
-            <select name="experienceLevel" defaultValue={d.experienceLevel} className={input}>
-              {EXPERIENCE_LEVELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
-            </select>
+            <ThemedSelect
+              name="experienceLevel"
+              defaultValue={d.experienceLevel}
+              options={EXPERIENCE_LEVELS}
+            />
           </Field>
         </div>
       </Section>
@@ -81,9 +84,11 @@ export function ProfileForm({ defaultValues: d }: Props) {
             <input type="number" name="defaultRateMinor" min={0} step={1} defaultValue={d.defaultRateMinor != null ? d.defaultRateMinor / 100 : ''} placeholder="60" className={input} />
           </Field>
           <Field label="Profile visibility">
-            <select name="visibility" defaultValue={d.visibility} className={input}>
-              {VISIBILITY.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
-            </select>
+            <ThemedSelect
+              name="visibility"
+              defaultValue={d.visibility}
+              options={VISIBILITY}
+            />
           </Field>
         </div>
       </Section>

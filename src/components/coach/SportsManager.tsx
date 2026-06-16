@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { X, Plus } from 'lucide-react';
 import { addCoachSport, removeCoachSport } from '@/server/coach/actions';
+import { ThemedSelect } from '@/components/ui/ThemedSelect';
 
 type Sport = { id: string; name: string };
 
@@ -45,15 +46,16 @@ export function SportsManager({
       {/* Add sport */}
       {available.length > 0 && (
         <form action={addAction} className="flex gap-2">
-          <select
+          <ThemedSelect
             name="sportId"
-            className="flex-1 bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-brand [color-scheme:dark]"
-          >
-            <option value="">Select a sport to add…</option>
-            {available.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
+            defaultValue=""
+            options={[
+              { value: '', label: 'Select a sport to add…' },
+              ...available.map((s) => ({ value: s.id, label: s.name })),
+            ]}
+            placeholder="Select a sport to add…"
+            className="flex-1"
+          />
           <button
             type="submit"
             disabled={addPending}

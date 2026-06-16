@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react';
 import { Loader2, Save } from 'lucide-react';
 import { editSlot, type SlotState } from '@/server/coach/actions';
+import { ThemedSelect } from '@/components/ui/ThemedSelect';
 
 const SESSION_TYPES = ['Beginner Lesson', 'Technique Drill', 'Fitness', 'Match Practice', 'Assessment'];
 const DURATIONS = [15, 30, 45, 60, 90];
@@ -39,9 +40,11 @@ export function SlotEditForm({ slotId, venues, sports, defaults }: Props) {
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Duration">
-          <select name="durationMin" defaultValue={defaults.durationMin} className={input}>
-            {DURATIONS.map((d) => <option key={d} value={d}>{d} min</option>)}
-          </select>
+          <ThemedSelect
+            name="durationMin"
+            defaultValue={String(defaults.durationMin)}
+            options={DURATIONS.map((d) => ({ value: String(d), label: `${d} min` }))}
+          />
         </Field>
         <Field label="Session fee (£)">
           <input type="number" name="feeGBP" min="0" step="1" defaultValue={defaults.feeGBP} required className={input} />
@@ -49,22 +52,33 @@ export function SlotEditForm({ slotId, venues, sports, defaults }: Props) {
       </div>
 
       <Field label="Session type">
-        <select name="sessionType" defaultValue={defaults.sessionType} className={input}>
-          {SESSION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
+        <ThemedSelect
+          name="sessionType"
+          defaultValue={defaults.sessionType}
+          options={SESSION_TYPES.map((t) => ({ value: t, label: t }))}
+        />
       </Field>
 
       <Field label="Sport">
-        <select name="sportId" defaultValue={defaults.sportId ?? ''} className={input}>
-          {sports.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-        </select>
+        <ThemedSelect
+          name="sportId"
+          defaultValue={defaults.sportId ?? ''}
+          options={sports.map((s) => ({ value: s.id, label: s.label }))}
+          placeholder="Select sport…"
+        />
       </Field>
 
       <Field label="Venue">
-        <select name="venueId" value={venue} onChange={(e) => setVenue(e.target.value)} className={input}>
-          {venues.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}
-          <option value="new">+ Add a new venue</option>
-        </select>
+        <ThemedSelect
+          name="venueId"
+          value={venue}
+          onChange={(v) => setVenue(v)}
+          options={[
+            ...venues.map((v) => ({ value: v.id, label: v.label })),
+            { value: 'new', label: '+ Add a new venue' },
+          ]}
+          placeholder="Select venue…"
+        />
       </Field>
 
       {venue === 'new' && (
