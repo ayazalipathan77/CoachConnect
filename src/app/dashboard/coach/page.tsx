@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { and, eq, gt } from "drizzle-orm";
 import { format, isPast } from "date-fns";
-import { CalendarPlus, Wallet, Star, Users } from "lucide-react";
+import { CalendarPlus, Wallet, Star, Users, CheckCircle2, XCircle } from "lucide-react";
 import { requireRole } from "@/server/auth/current-user";
 import { db, schema } from "@/server/db";
 import { getCoachBookings } from "@/server/repositories/bookings";
+import { completeSession, coachCancelBooking } from "@/server/booking/complete";
 import { DashboardShell, StatCard } from "@/components/dashboard/DashboardShell";
 import { gbp } from "@/lib/money";
 
@@ -85,15 +86,36 @@ export default async function CoachDashboard() {
             <p className="text-white/40 text-sm">No bookings yet.</p>
           ) : (
             <div className="flex flex-col gap-3">
-              {bookings.slice(0, 5).map((b) => (
-                <div key={b.id} className="flex items-center justify-between text-sm">
-                  <div>
-                    <p className="font-medium">{b.clientName}</p>
-                    <p className="text-white/40 text-xs">{b.sessionType} · {format(b.startAt, "EEE d MMM · HH:mm")}</p>
+              {bookings.slice(0, 5).map((b) => {
+                const past = isPast(b.startAt);
+                return (
+                  <div key={b.id} className="flex items-start justify-between gap-3 text-sm">
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{b.clientName}</p>
+                      <p className="text-white/40 text-xs">{b.sessionType} · {format(b.startAt, "EEE d MMM · HH:mm")}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-brand font-bold">{gbp(b.coachFeeMinor)}</span>
+                      {b.status === "confirmed" && past && (
+                        <form action={completeSession}>
+                          <input type="hidden" name="bookingId" value={b.id} />
+                          <button type="submit" title="Mark completed" className="text-brand hover:text-brand-dark transition-colors">
+                            <CheckCircle2 className="w-4 h-4" />
+                          </button>
+                        </form>
+                      )}
+                      {b.status === "confirmed" && !past && (
+                        <form action={coachCancelBooking}>
+                          <input type="hidden" name="bookingId" value={b.id} />
+                          <button type="submit" title="Cancel booking" className="text-white/30 hover:text-red-400 transition-colors">
+                            <XCircle className="w-4 h-4" />
+                          </button>
+                        </form>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-brand font-bold">{gbp(b.coachFeeMinor)}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
