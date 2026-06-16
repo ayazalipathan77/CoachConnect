@@ -47,3 +47,37 @@ services:
         value: "500"
       - key: PLATFORM_CURRENCY
         value: GBP
+      - key: CRON_SECRET
+        generateValue: true
+
+  - type: cron
+    name: coachconnect-reminders
+    runtime: node
+    plan: free
+    region: frankfurt
+    schedule: "*/30 * * * *"
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: npx tsx scripts/cron-reminders.ts
+    envVars:
+      - key: NODE_VERSION
+        value: "20.20.0"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: coachconnect-db
+          property: connectionString
+      - key: CRON_SECRET
+        fromService:
+          name: coachconnect
+          type: web
+          envVarKey: CRON_SECRET
+      - key: AUTH_SECRET
+        fromService:
+          name: coachconnect
+          type: web
+          envVarKey: AUTH_SECRET
+      - key: INTEGRATION_EMAIL
+        value: mock
+      - key: INTEGRATION_PUSH
+        value: mock
+      - key: INTEGRATION_PAYMENTS
+        value: mock

@@ -3,6 +3,7 @@ import { and, eq, gt } from "drizzle-orm";
 import { db, schema } from "@/server/db";
 import { config } from "@/server/config";
 import { integrations } from "@/server/integrations";
+import { notifyBookingConfirmed } from "@/server/notifications/service";
 
 export type BookingResult =
   | { ok: true; bookingId: string }
@@ -96,6 +97,41 @@ export async function createBooking(input: {
       updatedAt: new Date(),
     })
     .where(eq(schema.bookings.id, bookingId));
+
+  // Fetch names needed for notifications.
+  const [coachProfile] = await db
+    .select({ userId: schema.coachProfiles.userId })
+    .from(schema.coachProfiles)
+    .where(eq(schema.coachProfiles.id, slot.coachId))
+    .limit(1);
+
+  const [clientUser, coachUser] = await Promise.all([
+    db.select({ userId: schema.clientProfiles.userId, name: schema.users.name })
+      .from(schema.clientProfiles)
+      .innerJoin(schema.users, eq(schema.users.id, schema.clientProfiles.userId))
+      .where(eq(schema.clientProfiles.id, client.id))
+      .limit(1)
+      .then((r) => r[0]),
+    coachProfile
+      ? db.select({ name: schema.users.name })
+        .from(schema.users)
+        .where(eq(schema.users.id, coachProfile.userId))
+        .limit(1)
+        .then((r) => r[0])
+      : null,
+  ]);
+
+  if (coachProfile && clientUser && coachUser) {
+    await notifyBookingConfirmed({
+      clientUserId: clientUser.userId,
+      coachUserId: coachProfile.userId,
+      coachName: coachUser.name ?? "Your coach",
+      clientName: clientUser.name ?? "A client",
+      sessionType: slot.sessionType,
+      startAt: slot.startAt,
+      bookingId,
+    });
+  }
 
   return { ok: true, bookingId };
 }

@@ -7,10 +7,10 @@ import { db, schema } from "@/server/db";
 import { requireRole } from "@/server/auth/current-user";
 import { createPaymentProvider } from "@/server/integrations/payments";
 import { refundPercent } from "@/lib/cancellation";
+import { notifyCancelledByClient } from "@/server/notifications/service";
 
 export async function cancelBooking(formData: FormData): Promise<void> {
   const user = await requireRole("client");
-
   const bookingId = String(formData.get("bookingId") ?? "");
   if (!bookingId) return;
 
@@ -25,17 +25,16 @@ export async function cancelBooking(formData: FormData): Promise<void> {
     .select({
       id: schema.bookings.id,
       slotId: schema.bookings.slotId,
-      clientId: schema.bookings.clientId,
+      coachId: schema.bookings.coachId,
       status: schema.bookings.status,
       totalMinor: schema.bookings.totalMinor,
       paymentIntentId: schema.bookings.paymentIntentId,
       startAt: schema.slots.startAt,
+      sessionType: schema.slots.sessionType,
     })
     .from(schema.bookings)
     .innerJoin(schema.slots, eq(schema.slots.id, schema.bookings.slotId))
-    .where(
-      and(eq(schema.bookings.id, bookingId), eq(schema.bookings.clientId, client.id)),
-    )
+    .where(and(eq(schema.bookings.id, bookingId), eq(schema.bookings.clientId, client.id)))
     .limit(1);
 
   if (!booking || booking.status !== "confirmed") return;
@@ -44,31 +43,34 @@ export async function cancelBooking(formData: FormData): Promise<void> {
   const pct = refundPercent(booking.startAt, now);
   const refundMinor = Math.round((booking.totalMinor * pct) / 100);
 
-  // Issue refund via payment adapter.
   if (refundMinor > 0 && booking.paymentIntentId) {
-    const payments = createPaymentProvider();
-    await payments.refund(booking.paymentIntentId, refundMinor);
+    await createPaymentProvider().refund(booking.paymentIntentId, refundMinor);
   }
-
-  const newStatus = pct === 100
-    ? "refunded"
-    : ("cancelled_by_client" as const);
 
   await db
     .update(schema.bookings)
-    .set({
-      status: newStatus,
-      refundMinor,
-      cancelledAt: now,
-      updatedAt: now,
-    })
+    .set({ status: pct === 100 ? "refunded" : "cancelled_by_client", refundMinor, cancelledAt: now, updatedAt: now })
     .where(eq(schema.bookings.id, bookingId));
 
-  // Re-open the slot so another client can book it.
   await db
     .update(schema.slots)
     .set({ status: "open", updatedAt: now })
     .where(eq(schema.slots.id, booking.slotId));
+
+  const [coachUser] = await db
+    .select({ userId: schema.coachProfiles.userId })
+    .from(schema.coachProfiles)
+    .where(eq(schema.coachProfiles.id, booking.coachId))
+    .limit(1);
+
+  if (coachUser) {
+    await notifyCancelledByClient({
+      coachUserId: coachUser.userId,
+      clientName: user.name ?? "A client",
+      sessionType: booking.sessionType,
+      startAt: booking.startAt,
+    });
+  }
 
   revalidatePath("/bookings");
   redirect("/bookings?cancelled=1");

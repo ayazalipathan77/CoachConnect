@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { db, schema } from "@/server/db";
 import { requireUser } from "@/server/auth/current-user";
 import { getOrCreateConversation } from "@/server/repositories/messages";
+import { notifyNewMessage } from "@/server/notifications/service";
 
 export async function startConversation(formData: FormData): Promise<void> {
   const user = await requireUser();
@@ -49,6 +50,13 @@ export async function sendMessage(formData: FormData): Promise<void> {
     .update(schema.conversations)
     .set({ lastMessageAt: now })
     .where(eq(schema.conversations.id, conversationId));
+
+  const recipientUserId = conv.coachUserId === user.userId ? conv.clientUserId : conv.coachUserId;
+  await notifyNewMessage({
+    recipientUserId,
+    senderName: user.name ?? "Someone",
+    conversationId,
+  });
 
   revalidatePath(`/messages/${conversationId}`);
 }

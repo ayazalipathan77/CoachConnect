@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db, schema } from "@/server/db";
 import { requireRole } from "@/server/auth/current-user";
 import { createPaymentProvider } from "@/server/integrations/payments";
+import { notifySessionCompleted, notifyCancelledByCoach } from "@/server/notifications/service";
 
 /** Coach marks a session as completed — releases escrow to coach. */
 export async function completeSession(formData: FormData): Promise<void> {
@@ -16,11 +17,16 @@ export async function completeSession(formData: FormData): Promise<void> {
     .select({
       id: schema.bookings.id,
       coachId: schema.bookings.coachId,
+      clientId: schema.bookings.clientId,
       slotId: schema.bookings.slotId,
       status: schema.bookings.status,
+      totalMinor: schema.bookings.totalMinor,
       paymentIntentId: schema.bookings.paymentIntentId,
+      sessionType: schema.slots.sessionType,
+      startAt: schema.slots.startAt,
     })
     .from(schema.bookings)
+    .innerJoin(schema.slots, eq(schema.slots.id, schema.bookings.slotId))
     .where(eq(schema.bookings.id, bookingId))
     .limit(1);
 
@@ -55,6 +61,21 @@ export async function completeSession(formData: FormData): Promise<void> {
     .set({ status: "completed", updatedAt: now })
     .where(eq(schema.slots.id, booking.slotId));
 
+  // Notify client to leave review
+  const [clientUser] = await db
+    .select({ userId: schema.clientProfiles.userId })
+    .from(schema.clientProfiles)
+    .where(eq(schema.clientProfiles.id, booking.clientId))
+    .limit(1);
+
+  if (clientUser) {
+    await notifySessionCompleted({
+      clientUserId: clientUser.userId,
+      coachName: user.name ?? "Your coach",
+      bookingId,
+    });
+  }
+
   revalidatePath("/dashboard/coach");
   revalidatePath("/dashboard/coach/slots");
 }
@@ -69,12 +90,16 @@ export async function coachCancelBooking(formData: FormData): Promise<void> {
     .select({
       id: schema.bookings.id,
       coachId: schema.bookings.coachId,
+      clientId: schema.bookings.clientId,
       slotId: schema.bookings.slotId,
       status: schema.bookings.status,
       totalMinor: schema.bookings.totalMinor,
       paymentIntentId: schema.bookings.paymentIntentId,
+      sessionType: schema.slots.sessionType,
+      startAt: schema.slots.startAt,
     })
     .from(schema.bookings)
+    .innerJoin(schema.slots, eq(schema.slots.id, schema.bookings.slotId))
     .where(eq(schema.bookings.id, bookingId))
     .limit(1);
 
@@ -121,6 +146,22 @@ export async function coachCancelBooking(formData: FormData): Promise<void> {
       updatedAt: now,
     })
     .where(eq(schema.coachProfiles.id, profile.id));
+
+  // Notify client of coach cancellation (full refund)
+  const [clientUser] = await db
+    .select({ userId: schema.clientProfiles.userId })
+    .from(schema.clientProfiles)
+    .where(eq(schema.clientProfiles.id, booking.clientId))
+    .limit(1);
+
+  if (clientUser) {
+    await notifyCancelledByCoach({
+      clientUserId: clientUser.userId,
+      coachName: user.name ?? "Your coach",
+      sessionType: booking.sessionType,
+      startAt: booking.startAt,
+    });
+  }
 
   revalidatePath("/dashboard/coach");
   revalidatePath("/dashboard/coach/slots");
