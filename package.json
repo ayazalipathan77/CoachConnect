@@ -15,7 +15,9 @@
     "db:seed:coaches": "tsx --env-file=.env.local scripts/seed-coaches.ts",
     "db:seed:prod": "tsx scripts/seed.ts",
     "db:seed:coaches:prod": "tsx scripts/seed-coaches.ts",
-    "db:deploy": "pnpm db:migrate && pnpm db:seed:prod && pnpm db:seed:coaches:prod"
+    "db:seed:admin": "tsx --env-file=.env.local scripts/seed-admin.ts",
+    "db:seed:admin:prod": "tsx scripts/seed-admin.ts",
+    "db:deploy": "pnpm db:migrate && pnpm db:seed:prod && pnpm db:seed:coaches:prod && pnpm db:seed:admin:prod"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.2",
