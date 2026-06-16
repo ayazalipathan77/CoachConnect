@@ -10,7 +10,7 @@ import { gbp } from "@/lib/money";
 export default async function AthleteDashboard() {
   const user = await requireUser();
   if (user.role === "coach") redirect("/dashboard/coach");
-  if (user.role === "admin") redirect("/dashboard/admin");
+  if (user.role === "admin") redirect("/admin");
 
   const bookings = await getClientBookings(user.userId);
   const upcoming = bookings.filter((b) => !isPast(b.startAt) && b.status === "confirmed");

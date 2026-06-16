@@ -100,7 +100,7 @@ export async function login(
     name: user.name,
     email: user.email,
   });
-  redirect(user.role === "coach" ? "/dashboard/coach" : "/dashboard");
+  redirect(user.role === "coach" ? "/dashboard/coach" : user.role === "admin" ? "/admin" : "/dashboard");
 }
 
 export async function logout(): Promise<void> {
