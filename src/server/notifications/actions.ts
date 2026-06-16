@@ -1,7 +1,8 @@
 "use server";
 
 import { requireUser } from "@/server/auth/current-user";
-import { getNotifications, NOTIFICATIONS_PAGE_SIZE } from "@/server/repositories/notifications";
+import { getNotifications } from "@/server/repositories/notifications";
+import { NOTIFICATIONS_PAGE_SIZE } from "@/lib/pagination";
 
 export async function loadMoreNotifications(offset: number) {
   const user = await requireUser();

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { MessageSquare, Loader2, ChevronDown } from 'lucide-react';
 import { loadMoreConversations } from '@/server/messaging/actions';
-import { CONVERSATIONS_PAGE_SIZE } from '@/server/repositories/messages';
+import { CONVERSATIONS_PAGE_SIZE } from '@/lib/pagination';
 
 type Conversation = {
   id: string;

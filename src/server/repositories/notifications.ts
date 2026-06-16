@@ -2,7 +2,7 @@ import "server-only";
 import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { db, schema } from "@/server/db";
 
-export const NOTIFICATIONS_PAGE_SIZE = 10;
+import { NOTIFICATIONS_PAGE_SIZE } from "@/lib/pagination";
 
 export async function getNotifications(userId: string, limit = NOTIFICATIONS_PAGE_SIZE, offset = 0) {
   return db

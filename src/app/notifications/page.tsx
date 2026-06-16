@@ -4,8 +4,8 @@ import {
   getNotifications,
   markAllRead,
   countNotifications,
-  NOTIFICATIONS_PAGE_SIZE,
 } from "@/server/repositories/notifications";
+import { NOTIFICATIONS_PAGE_SIZE } from "@/lib/pagination";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { NotificationList } from "@/components/notifications/NotificationList";
 

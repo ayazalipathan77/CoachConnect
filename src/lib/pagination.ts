@@ -1,0 +1,2 @@
+export const NOTIFICATIONS_PAGE_SIZE = 10;
+export const CONVERSATIONS_PAGE_SIZE = 10;

@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, schema } from "@/server/db";
 import { requireUser } from "@/server/auth/current-user";
-import { getOrCreateConversation, getConversations, CONVERSATIONS_PAGE_SIZE } from "@/server/repositories/messages";
+import { getOrCreateConversation, getConversations } from "@/server/repositories/messages";
+import { CONVERSATIONS_PAGE_SIZE } from "@/lib/pagination";
 import { notifyNewMessage } from "@/server/notifications/service";
 
 export async function startConversation(formData: FormData): Promise<void> {

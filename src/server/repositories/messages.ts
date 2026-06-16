@@ -39,7 +39,7 @@ export async function getOrCreateConversation(coachUserId: string, clientUserId:
   return created.id;
 }
 
-export const CONVERSATIONS_PAGE_SIZE = 10;
+import { CONVERSATIONS_PAGE_SIZE } from "@/lib/pagination";
 
 export async function getConversations(userId: string, limit = CONVERSATIONS_PAGE_SIZE, offset = 0) {
   return db

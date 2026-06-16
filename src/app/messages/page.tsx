@@ -4,8 +4,8 @@ import { requireUser } from "@/server/auth/current-user";
 import {
   getConversations,
   countConversations,
-  CONVERSATIONS_PAGE_SIZE,
 } from "@/server/repositories/messages";
+import { CONVERSATIONS_PAGE_SIZE } from "@/lib/pagination";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { ConversationList } from "@/components/messaging/ConversationList";
 

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { Bell, BookCheck, MessageSquare, Star, XCircle, Loader2, ChevronDown } from 'lucide-react';
 import { loadMoreNotifications } from '@/server/notifications/actions';
-import { NOTIFICATIONS_PAGE_SIZE } from '@/server/repositories/notifications';
+import { NOTIFICATIONS_PAGE_SIZE } from '@/lib/pagination';
 
 const TYPE_ICON: Record<string, React.FC<{ className?: string }>> = {
   booking_confirmed: BookCheck,
