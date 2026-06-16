@@ -6,11 +6,13 @@ import { CoachShell } from "@/components/coach/CoachShell";
 import { ProfileForm } from "@/components/coach/ProfileForm";
 import { SportsManager } from "@/components/coach/SportsManager";
 import { AvatarUpload } from "@/components/coach/AvatarUpload";
+import { DocumentsManager } from "@/components/coach/DocumentsManager";
+import { getCoachDocuments } from "@/server/repositories/media";
 
 export default async function CoachProfilePage() {
   const user = await requireRole("coach");
 
-  const [profile, userData, allSports] = await Promise.all([
+  const [profile, userData, allSports, documents] = await Promise.all([
     db
       .select({
         id: schema.coachProfiles.id,
@@ -39,6 +41,7 @@ export default async function CoachProfilePage() {
       .from(schema.sports)
       .where(eq(schema.sports.active, true))
       .orderBy(schema.sports.name),
+    getCoachDocuments(user.userId),
   ]);
 
   const currentSports = profile
@@ -97,6 +100,13 @@ export default async function CoachProfilePage() {
           <div className="bg-[#111] border border-white/10 rounded-3xl p-6">
             <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">Sports you coach</h3>
             <SportsManager currentSports={currentSports} allSports={allSports} />
+          </div>
+
+          {/* Documents */}
+          <div className="bg-[#111] border border-white/10 rounded-3xl p-6">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-1">Qualifications & documents</h3>
+            <p className="text-white/30 text-xs mb-4">Upload coaching licences, certifications or DBS checks. Documents are reviewed by admin before showing on your profile.</p>
+            <DocumentsManager existing={documents} />
           </div>
         </div>
       </div>

@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
-import { MapPin, Star, BadgeCheck, Clock, ArrowRight, ShieldCheck, MessageSquare } from "lucide-react";
+import { MapPin, Star, BadgeCheck, Clock, ArrowRight, ShieldCheck, MessageSquare, FileText } from "lucide-react";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { getCoachById } from "@/server/repositories/coaches";
 import { getCoachReviews } from "@/server/repositories/reviews";
+import { getCoachDocuments } from "@/server/repositories/media";
 import { getCurrentUser } from "@/server/auth/current-user";
 import { startConversation } from "@/server/messaging/actions";
 import { gbp } from "@/lib/money";
@@ -30,6 +31,7 @@ export default async function CoachProfilePage({
   ]);
   if (!coach) notFound();
   const canMessage = viewer?.role === "client";
+  const approvedDocs = (await getCoachDocuments(coach.userId)).filter((d) => d.status === "approved");
 
   return (
     <div className="min-h-screen bg-[#050505] text-white">
@@ -81,6 +83,25 @@ export default async function CoachProfilePage({
               <section className="mt-8">
                 <h2 className="font-display font-bold text-xl mb-3">Coaching philosophy</h2>
                 <p className="text-white/60 leading-relaxed max-w-2xl italic">"{coach.philosophy}"</p>
+              </section>
+            )}
+
+            {approvedDocs.length > 0 && (
+              <section className="mt-8">
+                <h2 className="font-display font-bold text-xl mb-3 flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-brand" /> Verified qualifications
+                </h2>
+                <div className="flex flex-col gap-2 max-w-2xl">
+                  {approvedDocs.map((doc) => (
+                    <div key={doc.id} className="flex items-center gap-3 bg-[#111111] border border-white/10 rounded-xl px-4 py-3">
+                      <FileText className="w-4 h-4 text-white/40 shrink-0" />
+                      <span className="flex-1 text-sm text-white/80">{doc.title}</span>
+                      <span className="inline-flex items-center gap-1 text-xs text-brand font-medium bg-brand/10 border border-brand/20 px-2 py-0.5 rounded-full">
+                        <ShieldCheck className="w-3 h-3" /> Verified
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </section>
             )}
 
