@@ -6,13 +6,13 @@ import { motion } from 'motion/react';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { login, signup, type AuthState } from '@/server/auth/actions';
 
-export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
+export function AuthForm({ mode, initialRole = 'client' }: { mode: 'login' | 'signup'; initialRole?: 'client' | 'coach' }) {
   const action = mode === 'signup' ? signup : login;
   const [state, formAction, pending] = useActionState<AuthState, FormData>(
     action,
     undefined,
   );
-  const [role, setRole] = useState<'client' | 'coach'>('client');
+  const [role, setRole] = useState<'client' | 'coach'>(initialRole);
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
