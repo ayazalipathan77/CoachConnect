@@ -4,7 +4,9 @@ import { format, isPast } from "date-fns";
 import { CheckCircle2, Calendar } from "lucide-react";
 import { requireUser } from "@/server/auth/current-user";
 import { getClientBookings } from "@/server/repositories/bookings";
+import { hasReviewed } from "@/server/repositories/reviews";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { ReviewForm } from "@/components/review/ReviewForm";
 import { gbp } from "@/lib/money";
 
 const STATUS_STYLE: Record<string, string> = {
@@ -29,6 +31,23 @@ export default async function BookingsPage({
   const upcoming = bookings.filter((b) => !isPast(b.startAt));
   const past = bookings.filter((b) => isPast(b.startAt));
 
+  // For past confirmed/completed bookings, check if already reviewed.
+  const reviewableIds = past
+    .filter((b) => b.status === "confirmed" || b.status === "completed")
+    .map((b) => b.id);
+
+  const reviewedSet = new Set(
+    (
+      await Promise.all(
+        reviewableIds.map(async (id) => {
+          const b = past.find((x) => x.id === id)!;
+          const done = await hasReviewed(id, b.clientProfileId);
+          return done ? id : null;
+        }),
+      )
+    ).filter(Boolean) as string[],
+  );
+
   return (
     <DashboardShell user={user}>
       <h1 className="font-display font-bold text-4xl tracking-tight mb-2">My Bookings</h1>
@@ -51,40 +70,80 @@ export default async function BookingsPage({
         </div>
       ) : (
         <div className="flex flex-col gap-10">
-          {upcoming.length > 0 && <Section title="Upcoming" items={upcoming} />}
-          {past.length > 0 && <Section title="Past" items={past} />}
+          {upcoming.length > 0 && (
+            <section>
+              <h2 className="font-display font-bold text-xl mb-4">Upcoming</h2>
+              <div className="flex flex-col gap-3">
+                {upcoming.map((b) => (
+                  <BookingCard key={b.id} b={b} />
+                ))}
+              </div>
+            </section>
+          )}
+          {past.length > 0 && (
+            <section>
+              <h2 className="font-display font-bold text-xl mb-4">Past</h2>
+              <div className="flex flex-col gap-3">
+                {past.map((b) => (
+                  <BookingCard
+                    key={b.id}
+                    b={b}
+                    showReview={
+                      (b.status === "confirmed" || b.status === "completed") &&
+                      !reviewedSet.has(b.id)
+                    }
+                    alreadyReviewed={reviewedSet.has(b.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       )}
     </DashboardShell>
   );
 }
 
-function Section({ title, items }: { title: string; items: Awaited<ReturnType<typeof getClientBookings>> }) {
+type Booking = Awaited<ReturnType<typeof getClientBookings>>[number];
+
+function BookingCard({
+  b,
+  showReview = false,
+  alreadyReviewed = false,
+}: {
+  b: Booking;
+  showReview?: boolean;
+  alreadyReviewed?: boolean;
+}) {
   return (
-    <section>
-      <h2 className="font-display font-bold text-xl mb-4">{title}</h2>
-      <div className="flex flex-col gap-3">
-        {items.map((b) => (
-          <div key={b.id} className="flex items-center justify-between gap-4 bg-[#111111] border border-white/10 rounded-2xl p-5">
-            <div className="flex items-center gap-4">
-              {b.coachImage && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={b.coachImage} alt={b.coachName ?? "Coach"} className="w-12 h-12 rounded-xl object-cover" />
-              )}
-              <div>
-                <Link href={`/coach/${b.coachId}`} className="font-bold hover:text-brand transition-colors">{b.coachName}</Link>
-                <p className="text-white/50 text-sm">{b.sessionType} · {format(b.startAt, "EEE d MMM · HH:mm")}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-white font-bold">{gbp(b.totalMinor)}</span>
-              <span className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${STATUS_STYLE[b.status] ?? "bg-white/5 text-white/60 border-white/10"}`}>
-                {b.status.replace(/_/g, " ")}
-              </span>
-            </div>
+    <div className="bg-[#111111] border border-white/10 rounded-2xl p-5">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4">
+          {b.coachImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={b.coachImage} alt={b.coachName ?? "Coach"} className="w-12 h-12 rounded-xl object-cover" />
+          )}
+          <div>
+            <Link href={`/coach/${b.coachId}`} className="font-bold hover:text-brand transition-colors">
+              {b.coachName}
+            </Link>
+            <p className="text-white/50 text-sm">{b.sessionType} · {format(b.startAt, "EEE d MMM · HH:mm")}</p>
           </div>
-        ))}
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-white font-bold">{gbp(b.totalMinor)}</span>
+          <span className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${STATUS_STYLE[b.status] ?? "bg-white/5 text-white/60 border-white/10"}`}>
+            {b.status.replace(/_/g, " ")}
+          </span>
+        </div>
       </div>
-    </section>
+
+      {alreadyReviewed && (
+        <p className="mt-3 pt-3 border-t border-white/10 text-xs text-white/40">You reviewed this session.</p>
+      )}
+      {showReview && (
+        <ReviewForm bookingId={b.id} coachName={b.coachName ?? "the coach"} />
+      )}
+    </div>
   );
 }

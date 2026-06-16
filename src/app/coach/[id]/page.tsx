@@ -5,6 +5,7 @@ import { MapPin, Star, BadgeCheck, Clock, ArrowRight, ShieldCheck } from "lucide
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { getCoachById } from "@/server/repositories/coaches";
+import { getCoachReviews } from "@/server/repositories/reviews";
 import { gbp } from "@/lib/money";
 
 const LEVEL_LABEL: Record<string, string> = {
@@ -20,7 +21,7 @@ export default async function CoachProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const coach = await getCoachById(id);
+  const [coach, reviews] = await Promise.all([getCoachById(id), getCoachReviews(id)]);
   if (!coach) notFound();
 
   return (
@@ -66,6 +67,36 @@ export default async function CoachProfilePage({
               <ShieldCheck className="w-5 h-5 text-brand shrink-0" />
               Payments are held in escrow and only released to the coach after your session completes.
             </section>
+
+            {reviews.length > 0 && (
+              <section className="mt-12">
+                <h2 className="font-display font-bold text-2xl mb-6">
+                  Reviews
+                  <span className="text-white/30 font-normal text-lg ml-3">{reviews.length}</span>
+                </h2>
+                <div className="flex flex-col gap-4 max-w-2xl">
+                  {reviews.map((r) => (
+                    <div key={r.id} className="bg-[#111111] border border-white/10 rounded-2xl p-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star key={i} className={`w-4 h-4 ${i < r.rating ? "fill-brand text-brand" : "text-white/20"}`} />
+                          ))}
+                        </div>
+                        <span className="text-white/30 text-xs">{format(r.createdAt, "d MMM yyyy")}</span>
+                      </div>
+                      <p className="font-semibold text-sm">{r.clientName ?? "Anonymous"}</p>
+                      {r.comment && <p className="text-white/60 text-sm mt-1 leading-relaxed">{r.comment}</p>}
+                      {r.coachResponse && (
+                        <div className="mt-3 pl-3 border-l-2 border-brand/30 text-sm text-white/50">
+                          <span className="font-medium text-brand">Coach reply: </span>{r.coachResponse}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
 
           {/* Right: bookable slots */}

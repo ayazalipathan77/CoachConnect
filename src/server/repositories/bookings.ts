@@ -22,11 +22,13 @@ export async function getClientBookings(clientUserId: string) {
       coachId: schema.coachProfiles.id,
       coachName: schema.users.name,
       coachImage: schema.users.image,
+      clientProfileId: schema.clientProfiles.id,
     })
     .from(schema.bookings)
     .innerJoin(schema.slots, eq(schema.slots.id, schema.bookings.slotId))
     .innerJoin(schema.coachProfiles, eq(schema.coachProfiles.id, schema.bookings.coachId))
     .innerJoin(schema.users, eq(schema.users.id, schema.coachProfiles.userId))
+    .innerJoin(schema.clientProfiles, eq(schema.clientProfiles.id, schema.bookings.clientId))
     .where(eq(schema.bookings.clientId, client.id))
     .orderBy(desc(schema.slots.startAt));
 }
