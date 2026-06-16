@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
-import { MapPin, Star, BadgeCheck, Clock, ArrowRight, ShieldCheck } from "lucide-react";
+import { MapPin, Star, BadgeCheck, Clock, ArrowRight, ShieldCheck, MessageSquare } from "lucide-react";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { SiteFooter } from "@/components/landing/SiteFooter";
 import { getCoachById } from "@/server/repositories/coaches";
 import { getCoachReviews } from "@/server/repositories/reviews";
+import { getCurrentUser } from "@/server/auth/current-user";
+import { startConversation } from "@/server/messaging/actions";
 import { gbp } from "@/lib/money";
 
 const LEVEL_LABEL: Record<string, string> = {
@@ -21,8 +23,13 @@ export default async function CoachProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [coach, reviews] = await Promise.all([getCoachById(id), getCoachReviews(id)]);
+  const [coach, reviews, viewer] = await Promise.all([
+    getCoachById(id),
+    getCoachReviews(id),
+    getCurrentUser(),
+  ]);
   if (!coach) notFound();
+  const canMessage = viewer?.role === "client";
 
   return (
     <div className="min-h-screen bg-[#050505] text-white">
@@ -67,6 +74,20 @@ export default async function CoachProfilePage({
               <ShieldCheck className="w-5 h-5 text-brand shrink-0" />
               Payments are held in escrow and only released to the coach after your session completes.
             </section>
+
+            {canMessage && (
+              <section className="mt-6 max-w-2xl">
+                <form action={startConversation}>
+                  <input type="hidden" name="coachUserId" value={coach.userId} />
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 border border-white/20 text-white/70 hover:text-white hover:border-white/40 px-5 py-2.5 rounded-full text-sm font-medium transition-colors"
+                  >
+                    <MessageSquare className="w-4 h-4" /> Message coach
+                  </button>
+                </form>
+              </section>
+            )}
 
             {reviews.length > 0 && (
               <section className="mt-12">

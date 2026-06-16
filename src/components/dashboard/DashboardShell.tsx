@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { LogOut } from 'lucide-react';
+import { LogOut, MessageSquare } from 'lucide-react';
 import { Logo } from '@/components/landing/Logo';
 import { logout } from '@/server/auth/actions';
 import type { SessionPayload } from '@/server/auth/session';
@@ -17,6 +17,9 @@ export function DashboardShell({
         <div className="w-full flex items-center justify-between">
           <Link href="/"><Logo /></Link>
           <div className="flex items-center gap-4">
+            <Link href="/messages" className="text-white/50 hover:text-brand transition-colors" title="Messages">
+              <MessageSquare className="w-5 h-5" />
+            </Link>
             <span className="hidden sm:inline-flex items-center gap-2 text-sm text-white/60">
               <span className="px-2.5 py-1 rounded-full bg-brand/10 text-brand text-xs font-bold uppercase tracking-wider border border-brand/20">
                 {user.role}
