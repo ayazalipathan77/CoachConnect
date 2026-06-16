@@ -20,7 +20,7 @@ services:
     branch: main
     autoDeploy: true
     healthCheckPath: /
-    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm build && pnpm db:deploy
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build && pnpm db:deploy
     startCommand: pnpm start
     envVars:
       - key: NODE_VERSION
