@@ -13,9 +13,17 @@ const globalForDb = globalThis as unknown as {
   __ccPool?: ReturnType<typeof postgres>;
 };
 
+const isLocal =
+  config.DATABASE_URL.includes("localhost") ||
+  config.DATABASE_URL.includes("127.0.0.1");
+
 const pool =
   globalForDb.__ccPool ??
-  postgres(config.DATABASE_URL, { max: 10, prepare: false });
+  postgres(config.DATABASE_URL, {
+    max: 10,
+    prepare: false,
+    ssl: isLocal ? false : "require",
+  });
 
 if (process.env.NODE_ENV !== "production") globalForDb.__ccPool = pool;
 

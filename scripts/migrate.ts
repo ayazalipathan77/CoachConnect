@@ -13,7 +13,8 @@ async function main() {
   const masked = url.replace(/:\/\/([^:]+):([^@]+)@/, "://$1:***@");
   console.log(`Connecting to: ${masked}`);
 
-  const client = postgres(url, { max: 1, connect_timeout: 30 });
+  const isLocal = url.includes("localhost") || url.includes("127.0.0.1");
+  const client = postgres(url, { max: 1, connect_timeout: 30, ssl: isLocal ? false : "require" });
   const db = drizzle(client);
 
   try {
