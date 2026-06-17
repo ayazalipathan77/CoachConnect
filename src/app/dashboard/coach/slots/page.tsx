@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { format, isPast } from "date-fns";
-import { CalendarPlus, Clock, MapPin, Pencil } from "lucide-react";
+import { CalendarPlus, Clock, MapPin, Pencil, Users, Hourglass } from "lucide-react";
 import { requireRole } from "@/server/auth/current-user";
 import { db, schema } from "@/server/db";
 import { getCoachSlots } from "@/server/repositories/slots";
+import { getWaitlistForCoach } from "@/server/repositories/waitlist";
 import { cancelSlot } from "@/server/coach/actions";
 import { CoachShell } from "@/components/coach/CoachShell";
 import { gbp } from "@/lib/money";
@@ -30,6 +31,11 @@ export default async function CoachSlotsPage({
     .limit(1);
 
   const slots = profile ? await getCoachSlots(profile.id) : [];
+  const waitlistEntries = profile ? await getWaitlistForCoach(profile.id) : [];
+  const waitlistCounts: Record<string, number> = {};
+  for (const w of waitlistEntries) {
+    if (w.slotId) waitlistCounts[w.slotId] = (waitlistCounts[w.slotId] ?? 0) + 1;
+  }
   const upcoming = slots.filter((s) => !isPast(s.startAt));
   const past = slots.filter((s) => isPast(s.startAt));
 
@@ -72,13 +78,13 @@ export default async function CoachSlotsPage({
           {upcoming.length > 0 && (
             <section>
               <h2 className="font-bold text-white/60 text-xs uppercase tracking-widest mb-3">Upcoming</h2>
-              <SlotList slots={upcoming} coachProfileId={profile!.id} />
+              <SlotList slots={upcoming} coachProfileId={profile!.id} waitlistCounts={waitlistCounts} />
             </section>
           )}
           {past.length > 0 && (
             <section>
               <h2 className="font-bold text-white/60 text-xs uppercase tracking-widest mb-3">Past</h2>
-              <SlotList slots={past} coachProfileId={profile!.id} />
+              <SlotList slots={past} coachProfileId={profile!.id} waitlistCounts={waitlistCounts} />
             </section>
           )}
         </div>
@@ -89,7 +95,7 @@ export default async function CoachSlotsPage({
 
 type Slot = Awaited<ReturnType<typeof getCoachSlots>>[number];
 
-function SlotList({ slots, coachProfileId: _ }: { slots: Slot[]; coachProfileId: string }) {
+function SlotList({ slots, coachProfileId: _, waitlistCounts }: { slots: Slot[]; coachProfileId: string; waitlistCounts: Record<string, number> }) {
   return (
     <div className="flex flex-col gap-3">
       {slots.map((slot) => (
@@ -100,6 +106,16 @@ function SlotList({ slots, coachProfileId: _ }: { slots: Slot[]; coachProfileId:
               <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${STATUS_STYLE[slot.status] ?? STATUS_STYLE.cancelled}`}>
                 {slot.status}
               </span>
+              {slot.maxParticipants > 1 && (
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full border bg-white/5 text-white/60 border-white/10 flex items-center gap-1">
+                  <Users className="w-3 h-3" /> {slot.currentParticipants}/{slot.maxParticipants}
+                </span>
+              )}
+              {(waitlistCounts[slot.id] ?? 0) > 0 && (
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/20 flex items-center gap-1">
+                  <Hourglass className="w-3 h-3" /> {waitlistCounts[slot.id]} waiting
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-4 text-xs text-white/40 mt-0.5">
               <span className="flex items-center gap-1">

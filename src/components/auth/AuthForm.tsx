@@ -56,6 +56,14 @@ export function AuthForm({ mode, initialRole = 'client' }: { mode: 'login' | 'si
         autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
       />
 
+      {mode === 'login' && (
+        <div className="-mt-2 text-right">
+          <Link href="/forgot-password" className="text-sm text-brand font-medium hover:underline">
+            Forgot password?
+          </Link>
+        </div>
+      )}
+
       {mode === 'signup' && role === 'coach' && (
         <label className="flex items-start gap-3 cursor-pointer">
           <input

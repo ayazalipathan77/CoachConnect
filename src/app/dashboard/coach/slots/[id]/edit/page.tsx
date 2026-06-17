@@ -34,6 +34,7 @@ export default async function EditSlotPage({
       status: schema.slots.status,
       venueId: schema.slots.venueId,
       sportId: schema.slots.sportId,
+      maxParticipants: schema.slots.maxParticipants,
     })
     .from(schema.slots)
     .where(and(eq(schema.slots.id, slotId), eq(schema.slots.coachId, profile.id)))
@@ -88,6 +89,7 @@ export default async function EditSlotPage({
               feeGBP: slot.feeMinor / 100,
               venueId: slot.venueId ?? null,
               sportId: slot.sportId ?? null,
+              maxParticipants: slot.maxParticipants,
             }}
           />
         </div>

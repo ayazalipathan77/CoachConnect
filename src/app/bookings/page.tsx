@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { format, isPast } from "date-fns";
-import { CheckCircle2, Calendar, XCircle, ArrowRight, ArrowLeft } from "lucide-react";
+import { CheckCircle2, Calendar, XCircle, ArrowRight, ArrowLeft, Hourglass } from "lucide-react";
 import { requireUser } from "@/server/auth/current-user";
 import { getClientBookings } from "@/server/repositories/bookings";
+import { getClientWaitlistEntries } from "@/server/repositories/waitlist";
+import { leaveWaitlist } from "@/server/booking/waitlist";
 import { hasReviewed } from "@/server/repositories/reviews";
 import { cancelBooking } from "@/server/booking/cancel";
 import { refundPercent } from "@/lib/cancellation";
@@ -28,7 +30,10 @@ export default async function BookingsPage({
   const user = await requireUser();
   if (user.role === "coach") redirect("/dashboard/coach");
   const { booked, cancelled } = await searchParams;
-  const bookings = await getClientBookings(user.userId);
+  const [bookings, waitlistEntries] = await Promise.all([
+    getClientBookings(user.userId),
+    getClientWaitlistEntries(user.userId),
+  ]);
 
   const upcoming = bookings.filter((b) => !isPast(b.startAt));
   const past = bookings.filter((b) => isPast(b.startAt));
@@ -111,6 +116,48 @@ export default async function BookingsPage({
             </section>
           )}
         </div>
+      )}
+
+      {waitlistEntries.length > 0 && (
+        <section className="mt-10">
+          <h2 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
+            <Hourglass className="w-5 h-5 text-brand" /> Waitlist
+          </h2>
+          <div className="flex flex-col gap-3">
+            {waitlistEntries.map((w) => (
+              <div key={w.id} className="bg-[#111111] border border-white/10 rounded-2xl p-5 flex items-center justify-between gap-4 flex-wrap">
+                <div className="min-w-0">
+                  <Link href={`/coach/${w.coachId}`} className="font-bold hover:text-brand transition-colors">
+                    {w.coachName}
+                  </Link>
+                  <p className="text-white/50 text-sm">
+                    {w.startAt
+                      ? `${w.sessionType ?? "Session"} · ${format(w.startAt, "EEE d MMM · HH:mm")}`
+                      : "Any new session"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+                    w.status === "notified"
+                      ? "bg-brand/10 text-brand border-brand/30"
+                      : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                  }`}>
+                    {w.status}
+                  </span>
+                  <form action={leaveWaitlist}>
+                    <input type="hidden" name="waitlistId" value={w.id} />
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border border-white/15 text-white/60 hover:text-white hover:border-white/30 transition-colors"
+                    >
+                      <XCircle className="w-3.5 h-3.5" /> Leave
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
     </DashboardShell>
   );

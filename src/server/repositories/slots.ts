@@ -1,5 +1,5 @@
 import "server-only";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { db, schema } from "@/server/db";
 
 export async function getCoachSlots(coachId: string) {
@@ -11,6 +11,8 @@ export async function getCoachSlots(coachId: string) {
       sessionType: schema.slots.sessionType,
       feeMinor: schema.slots.feeMinor,
       status: schema.slots.status,
+      maxParticipants: schema.slots.maxParticipants,
+      currentParticipants: schema.slots.currentParticipants,
       venueName: schema.venues.name,
       venueCity: schema.venues.city,
     })
@@ -37,6 +39,8 @@ export async function getBookableSlot(slotId: string) {
       feeMinor: schema.slots.feeMinor,
       currency: schema.slots.currency,
       status: schema.slots.status,
+      maxParticipants: schema.slots.maxParticipants,
+      currentParticipants: schema.slots.currentParticipants,
       coachId: schema.coachProfiles.id,
       coachName: schema.users.name,
       coachImage: schema.users.image,
@@ -47,7 +51,7 @@ export async function getBookableSlot(slotId: string) {
     .innerJoin(schema.coachProfiles, eq(schema.coachProfiles.id, schema.slots.coachId))
     .innerJoin(schema.users, eq(schema.users.id, schema.coachProfiles.userId))
     .leftJoin(schema.venues, eq(schema.venues.id, schema.slots.venueId))
-    .where(eq(schema.slots.id, slotId))
+    .where(and(eq(schema.slots.id, slotId), ne(schema.slots.status, "cancelled")))
     .limit(1);
   return row ?? null;
 }

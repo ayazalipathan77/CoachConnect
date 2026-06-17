@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, schema } from "@/server/db";
@@ -8,6 +8,7 @@ import { requireRole } from "@/server/auth/current-user";
 import { createPaymentProvider } from "@/server/integrations/payments";
 import { refundPercent } from "@/lib/cancellation";
 import { notifyCancelledByClient } from "@/server/notifications/service";
+import { notifyWaitlistOnSpotOpened } from "@/server/booking/waitlist";
 
 export async function cancelBooking(formData: FormData): Promise<void> {
   const user = await requireRole("client");
@@ -54,8 +55,14 @@ export async function cancelBooking(formData: FormData): Promise<void> {
 
   await db
     .update(schema.slots)
-    .set({ status: "open", updatedAt: now })
+    .set({
+      currentParticipants: sql`GREATEST(0, ${schema.slots.currentParticipants} - 1)`,
+      status: sql`CASE WHEN status = 'booked' THEN 'open'::slot_status ELSE status END`,
+      updatedAt: now,
+    })
     .where(eq(schema.slots.id, booking.slotId));
+
+  await notifyWaitlistOnSpotOpened(booking.slotId);
 
   const [coachUser] = await db
     .select({ userId: schema.coachProfiles.userId })

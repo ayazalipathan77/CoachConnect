@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { db, schema } from "@/server/db";
 import { config } from "@/server/config";
 import { requireRole } from "@/server/auth/current-user";
+import { notifyWaitlistOnNewSlot } from "@/server/booking/waitlist";
 
 export type SlotState = { error?: string } | undefined;
 export type ProfileState = { error?: string; success?: boolean } | undefined;
@@ -87,6 +88,7 @@ const slotSchema = z.object({
   durationMin: z.coerce.number().int().positive(),
   sessionType: z.string().min(1, "Choose a session type."),
   feeGBP: z.coerce.number().min(0, "Fee can't be negative."),
+  maxParticipants: z.coerce.number().int().min(1).max(20).optional(),
   sportId: z.string().optional(),
   venueId: z.string().optional(),
   newVenueName: z.string().optional(),
@@ -152,6 +154,7 @@ export async function createSlot(
     startAt,
     durationMin: d.durationMin,
     sessionType: d.sessionType,
+    maxParticipants: d.maxParticipants ?? 1,
     feeMinor,
     currency: config.PLATFORM_CURRENCY,
     status: "open",
@@ -164,6 +167,9 @@ export async function createSlot(
       .values({ coachId, sportId: d.sportId })
       .onConflictDoNothing();
   }
+
+  // Notify clients waiting for new sessions from this coach.
+  await notifyWaitlistOnNewSlot(coachId);
 
   revalidatePath("/dashboard/coach/slots");
   revalidatePath("/dashboard/coach");
@@ -288,6 +294,7 @@ export async function editSlot(
       startAt,
       durationMin: d.durationMin,
       sessionType: d.sessionType,
+      maxParticipants: d.maxParticipants ?? 1,
       feeMinor,
       venueId,
       sportId: d.sportId || null,

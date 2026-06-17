@@ -63,6 +63,9 @@ export async function getCoachBookings(coachUserId: string, statusFilter?: strin
       startAt: schema.slots.startAt,
       durationMin: schema.slots.durationMin,
       sessionType: schema.slots.sessionType,
+      slotFeeMinor: schema.slots.feeMinor,
+      venueId: schema.slots.venueId,
+      sportId: schema.slots.sportId,
       clientName: schema.users.name,
       clientImage: schema.users.image,
     })

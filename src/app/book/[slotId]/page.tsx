@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
-import { Calendar, Clock, MapPin, ArrowLeft } from "lucide-react";
+import { Calendar, Clock, MapPin, ArrowLeft, Users, Hourglass } from "lucide-react";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 import { BookForm } from "@/components/booking/BookForm";
 import { getBookableSlot } from "@/server/repositories/slots";
+import { isOnWaitlist } from "@/server/repositories/waitlist";
+import { joinWaitlist } from "@/server/booking/waitlist";
 import { serviceFeeFor } from "@/server/services/booking";
+import { getCurrentUser } from "@/server/auth/current-user";
+import { db, schema } from "@/server/db";
+import { eq } from "drizzle-orm";
 import { gbp } from "@/lib/money";
 
 export default async function BookPage({
@@ -20,6 +25,25 @@ export default async function BookPage({
   const serviceFee = serviceFeeFor(slot.feeMinor);
   const total = slot.feeMinor + serviceFee;
   const booked = slot.status !== "open";
+  const spotsRemaining = Math.max(0, slot.maxParticipants - slot.currentParticipants);
+  const isGroup = slot.maxParticipants > 1;
+  const showWaitlist = booked && isGroup;
+
+  // Determine if the current client is already on the waitlist for this slot.
+  let alreadyWaitlisted = false;
+  if (showWaitlist) {
+    const user = await getCurrentUser();
+    if (user?.role === "client") {
+      const [client] = await db
+        .select({ id: schema.clientProfiles.id })
+        .from(schema.clientProfiles)
+        .where(eq(schema.clientProfiles.userId, user.userId))
+        .limit(1);
+      if (client) {
+        alreadyWaitlisted = await isOnWaitlist(client.id, slot.id, slot.coachId);
+      }
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#050505] text-white">
@@ -43,6 +67,12 @@ export default async function BookPage({
                   <p className="font-bold text-lg">{slot.coachName}</p>
                   <p className="text-brand text-sm">{slot.sessionType}</p>
                 </div>
+                {isGroup && (
+                  <span className="ml-auto inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border bg-white/5 border-white/10 text-white/70">
+                    <Users className="w-3.5 h-3.5" />
+                    {spotsRemaining > 0 ? `${spotsRemaining} spot${spotsRemaining === 1 ? "" : "s"} remaining` : "Full"}
+                  </span>
+                )}
               </div>
               <dl className="flex flex-col gap-3 py-5 text-sm border-b border-white/10">
                 <Row icon={Calendar} label="Date & time" value={format(slot.startAt, "EEEE d MMMM yyyy · HH:mm")} />
@@ -59,7 +89,34 @@ export default async function BookPage({
 
           {/* Payment */}
           <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 h-fit lg:mt-[3.75rem]">
-            {booked ? (
+            {showWaitlist ? (
+              <div className="py-6">
+                <div className="flex items-center gap-2 mb-3 text-brand">
+                  <Hourglass className="w-5 h-5" />
+                  <h2 className="font-bold text-lg">Session full</h2>
+                </div>
+                <p className="text-white/60 text-sm mb-5">
+                  This session is full. Join the waitlist to be notified if a spot opens.
+                </p>
+                {alreadyWaitlisted ? (
+                  <p className="text-sm text-brand bg-brand/10 border border-brand/20 rounded-xl px-4 py-3">
+                    You&apos;re on the waitlist. We&apos;ll notify you if a spot opens.
+                  </p>
+                ) : (
+                  <form action={joinWaitlist}>
+                    <input type="hidden" name="coachId" value={slot.coachId} />
+                    <input type="hidden" name="slotId" value={slot.id} />
+                    <button
+                      type="submit"
+                      className="w-full bg-brand text-black px-6 py-4 rounded-full font-bold text-base hover:bg-brand-dark transition-all flex items-center justify-center gap-2"
+                    >
+                      <Hourglass className="w-4 h-4" /> Join the waitlist
+                    </button>
+                  </form>
+                )}
+                <Link href={`/coach/${slot.coachId}`} className="text-brand font-medium hover:underline mt-4 inline-block text-sm">See other sessions →</Link>
+              </div>
+            ) : booked ? (
               <div className="text-center py-10">
                 <p className="text-white/60">This session has already been booked.</p>
                 <Link href={`/coach/${slot.coachId}`} className="text-brand font-medium hover:underline mt-3 inline-block">See other sessions →</Link>

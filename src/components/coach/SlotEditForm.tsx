@@ -22,6 +22,7 @@ type Props = {
     feeGBP: number;
     venueId: string | null;
     sportId: string | null;
+    maxParticipants: number;
   };
 };
 
@@ -57,6 +58,10 @@ export function SlotEditForm({ slotId, venues, sports, defaults }: Props) {
           defaultValue={defaults.sessionType}
           options={SESSION_TYPES.map((t) => ({ value: t, label: t }))}
         />
+      </Field>
+
+      <Field label="Max participants">
+        <input type="number" name="maxParticipants" min="1" max="20" defaultValue={defaults.maxParticipants} className={input} />
       </Field>
 
       <Field label="Sport">

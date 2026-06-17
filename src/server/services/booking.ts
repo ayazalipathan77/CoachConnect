@@ -42,7 +42,7 @@ export async function createBooking(input: {
       ),
     )
     .limit(1);
-  if (!slot) return { ok: false, error: "This session is no longer available." };
+  if (!slot) return { ok: false, error: "This session is fully booked." };
 
   // BRD §5.4 — free intro session cap: max 2 per calendar month per coach.
   if (slot.feeMinor === 0) {
@@ -64,12 +64,23 @@ export async function createBooking(input: {
   let bookingId: string;
   try {
     bookingId = await db.transaction(async (tx) => {
+      // Atomically claim a participant slot. Marks the slot "booked" once full.
       const locked = await tx
         .update(schema.slots)
-        .set({ status: "booked", updatedAt: new Date() })
-        .where(and(eq(schema.slots.id, slot.id), eq(schema.slots.status, "open")))
+        .set({
+          currentParticipants: sql`${schema.slots.currentParticipants} + 1`,
+          status: sql`CASE WHEN current_participants + 1 >= max_participants THEN 'booked'::slot_status ELSE status END`,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(schema.slots.id, input.slotId),
+            eq(schema.slots.status, "open"),
+            sql`${schema.slots.currentParticipants} < ${schema.slots.maxParticipants}`,
+          ),
+        )
         .returning({ id: schema.slots.id });
-      if (locked.length === 0) throw new Error("RACE");
+      if (locked.length === 0) throw new Error("FULL");
 
       const [booking] = await tx
         .insert(schema.bookings)
@@ -87,7 +98,10 @@ export async function createBooking(input: {
         .returning({ id: schema.bookings.id });
       return booking.id;
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.message === "FULL") {
+      return { ok: false, error: "This session is fully booked." };
+    }
     return { ok: false, error: "This session was just booked by someone else." };
   }
 

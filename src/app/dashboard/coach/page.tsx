@@ -6,9 +6,11 @@ import { requireRole } from "@/server/auth/current-user";
 import { db, schema } from "@/server/db";
 import { getCoachBookings } from "@/server/repositories/bookings";
 import { getCoachReviews } from "@/server/repositories/reviews";
+import { getCoachEarnings } from "@/server/repositories/earnings";
 import { completeSession, coachCancelBooking } from "@/server/booking/complete";
 import { StatCard } from "@/components/dashboard/DashboardShell";
 import { CoachShell } from "@/components/coach/CoachShell";
+import { EarningsChart } from "@/components/coach/EarningsChart";
 import { gbp } from "@/lib/money";
 
 export default async function CoachDashboard() {
@@ -23,10 +25,13 @@ export default async function CoachDashboard() {
   const completeness = profile?.completeness ?? 0;
   const status = profile?.status ?? "pending_review";
 
-  const [bookings, recentReviews] = await Promise.all([
+  const [bookings, recentReviews, earnings] = await Promise.all([
     profile ? getCoachBookings(user.userId) : Promise.resolve([]),
     profile ? getCoachReviews(profile.id, 3) : Promise.resolve([]),
+    profile ? getCoachEarnings(profile.id, 6) : Promise.resolve([]),
   ]);
+  const totalCommission = earnings.reduce((s, e) => s + e.commission, 0);
+  const totalMissed = earnings.reduce((s, e) => s + e.missed, 0);
   const upcomingBookings = bookings.filter((b) => !isPast(b.startAt) && b.status === "confirmed");
   const earningsMinor = bookings
     .filter((b) => b.status === "confirmed" || b.status === "completed")
@@ -83,6 +88,28 @@ export default async function CoachDashboard() {
           Complete your profile →
         </Link>
       </div>
+
+      {/* Financials */}
+      {earnings.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+          <div className="lg:col-span-2">
+            <EarningsChart data={earnings} />
+          </div>
+          <div className="bg-[#111111] border border-white/10 rounded-3xl p-6 flex flex-col gap-4">
+            <h3 className="font-bold flex items-center gap-2"><Wallet className="w-4 h-4 text-brand" /> Commission breakdown</h3>
+            <div>
+              <p className="text-white/40 text-xs uppercase tracking-widest mb-1">Platform commission</p>
+              <p className="font-display font-bold text-2xl text-white/70">{gbp(totalCommission)}</p>
+              <p className="text-white/30 text-xs mt-0.5">Taken on completed sessions (last 6 months)</p>
+            </div>
+            <div className="pt-4 border-t border-white/10">
+              <p className="text-white/40 text-xs uppercase tracking-widest mb-1">Missed revenue</p>
+              <p className="font-display font-bold text-2xl text-white/40">{gbp(totalMissed)}</p>
+              <p className="text-white/30 text-xs mt-0.5">Coach fees lost to cancellations</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-[#111111] border border-white/10 rounded-3xl p-6">

@@ -12,7 +12,7 @@ import {
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
-import { relations, sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import { createId } from "@/lib/id";
 
 /* ------------------------------------------------------------------ *
@@ -294,6 +294,7 @@ export const slots = pgTable(
     durationMin: integer("duration_min").notNull(),
     sessionType: varchar("session_type", { length: 80 }).notNull(),
     maxParticipants: integer("max_participants").notNull().default(1),
+    currentParticipants: integer("current_participants").notNull().default(0),
     feeMinor: integer("fee_minor").notNull(),
     currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
     description: text("description"),
@@ -342,11 +343,36 @@ export const bookings = pgTable(
   (t) => [
     index("bookings_client_idx").on(t.clientId, t.status),
     index("bookings_coach_idx").on(t.coachId, t.status),
-    uniqueIndex("bookings_slot_active_uniq")
-      .on(t.slotId)
-      .where(sql`status in ('pending_payment','confirmed','completed')`),
   ],
 );
+
+/* ------------------------------------------------------------------ *
+ *  Waitlist — clients waiting for a full slot or new sessions
+ * ------------------------------------------------------------------ */
+export const waitlist = pgTable("waitlist", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  slotId: text("slot_id").references(() => slots.id, { onDelete: "cascade" }),
+  clientId: text("client_id").notNull().references(() => clientProfiles.id, { onDelete: "cascade" }),
+  coachId: text("coach_id").notNull().references(() => coachProfiles.id, { onDelete: "cascade" }),
+  status: text("status", { enum: ["waiting", "notified", "booked", "cancelled"] }).notNull().default("waiting"),
+  notifiedAt: timestamp("notified_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("waitlist_slot_client_uniq").on(t.slotId, t.clientId),
+  index("waitlist_coach_idx").on(t.coachId, t.status),
+]);
+
+/* ------------------------------------------------------------------ *
+ *  Password reset tokens
+ * ------------------------------------------------------------------ */
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [index("prt_user_idx").on(t.userId)]);
 
 /* ------------------------------------------------------------------ *
  *  Reviews (BRD §6.5)
@@ -526,3 +552,25 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
   sender: one(users, { fields: [messages.senderId], references: [users.id] }),
 }));
+
+export const waitlistRelations = relations(waitlist, ({ one }) => ({
+  slot: one(slots, { fields: [waitlist.slotId], references: [slots.id] }),
+  client: one(clientProfiles, {
+    fields: [waitlist.clientId],
+    references: [clientProfiles.id],
+  }),
+  coach: one(coachProfiles, {
+    fields: [waitlist.coachId],
+    references: [coachProfiles.id],
+  }),
+}));
+
+export const passwordResetTokensRelations = relations(
+  passwordResetTokens,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [passwordResetTokens.userId],
+      references: [users.id],
+    }),
+  }),
+);

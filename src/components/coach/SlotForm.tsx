@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { Loader2, CalendarPlus } from 'lucide-react';
+import { Loader2, CalendarPlus, Info } from 'lucide-react';
 import { createSlot, type SlotState } from '@/server/coach/actions';
 import { ThemedSelect } from '@/components/ui/ThemedSelect';
 
@@ -10,42 +10,70 @@ const DURATIONS = [15, 30, 45, 60, 90];
 
 type Opt = { id: string; label: string };
 
-export function SlotForm({ venues, sports }: { venues: Opt[]; sports: Opt[] }) {
+export type SlotFormDefaults = {
+  durationMin?: number;
+  sessionType?: string;
+  feeGBP?: number;
+  maxParticipants?: number;
+  venueId?: string;
+  sportId?: string;
+  recreated?: boolean;
+};
+
+export function SlotForm({
+  venues,
+  sports,
+  defaults,
+}: {
+  venues: Opt[];
+  sports: Opt[];
+  defaults?: SlotFormDefaults;
+}) {
   const [state, action, pending] = useActionState<SlotState, FormData>(createSlot, undefined);
-  const [venue, setVenue] = useState(venues[0]?.id ?? 'new');
+  const [venue, setVenue] = useState(defaults?.venueId ?? venues[0]?.id ?? 'new');
 
   return (
     <form action={action} className="flex flex-col gap-5 max-w-xl">
+      {defaults?.recreated && (
+        <p className="flex items-start gap-2 text-sm text-brand bg-brand/10 border border-brand/20 rounded-xl px-4 py-3">
+          <Info className="w-4 h-4 mt-0.5 shrink-0" />
+          Date and time needed — all other details pre-filled from your previous session.
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Date"><input type="date" name="date" required className={input} /></Field>
-        <Field label="Start time"><input type="time" name="time" required className={input} /></Field>
+        <Field label="Date"><input type="date" name="date" required defaultValue="" className={input} /></Field>
+        <Field label="Start time"><input type="time" name="time" required defaultValue="" className={input} /></Field>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Duration">
           <ThemedSelect
             name="durationMin"
-            defaultValue="60"
+            defaultValue={String(defaults?.durationMin ?? 60)}
             options={DURATIONS.map((d) => ({ value: String(d), label: `${d} min` }))}
           />
         </Field>
         <Field label="Session fee (£)">
-          <input type="number" name="feeGBP" min="0" step="1" defaultValue={50} required className={input} />
+          <input type="number" name="feeGBP" min="0" step="1" defaultValue={defaults?.feeGBP ?? 50} required className={input} />
         </Field>
       </div>
 
       <Field label="Session type">
         <ThemedSelect
           name="sessionType"
-          defaultValue={SESSION_TYPES[0]}
+          defaultValue={defaults?.sessionType ?? SESSION_TYPES[0]}
           options={SESSION_TYPES.map((t) => ({ value: t, label: t }))}
         />
+      </Field>
+
+      <Field label="Max participants">
+        <input type="number" name="maxParticipants" min="1" max="20" defaultValue={defaults?.maxParticipants ?? 1} className={input} />
       </Field>
 
       <Field label="Sport">
         <ThemedSelect
           name="sportId"
-          defaultValue={sports[0]?.id ?? ''}
+          defaultValue={defaults?.sportId ?? sports[0]?.id ?? ''}
           options={sports.map((s) => ({ value: s.id, label: s.label }))}
           placeholder="Select sport…"
         />

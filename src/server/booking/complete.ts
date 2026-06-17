@@ -1,11 +1,12 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db, schema } from "@/server/db";
 import { requireRole } from "@/server/auth/current-user";
 import { createPaymentProvider } from "@/server/integrations/payments";
 import { notifySessionCompleted, notifyCancelledByCoach } from "@/server/notifications/service";
+import { notifyWaitlistOnSpotOpened } from "@/server/booking/waitlist";
 
 /** Coach marks a session as completed — releases escrow to coach. */
 export async function completeSession(formData: FormData): Promise<void> {
@@ -131,8 +132,14 @@ export async function coachCancelBooking(formData: FormData): Promise<void> {
 
   await db
     .update(schema.slots)
-    .set({ status: "open", updatedAt: now })
+    .set({
+      currentParticipants: sql`GREATEST(0, ${schema.slots.currentParticipants} - 1)`,
+      status: sql`CASE WHEN status = 'booked' THEN 'open'::slot_status ELSE status END`,
+      updatedAt: now,
+    })
     .where(eq(schema.slots.id, booking.slotId));
+
+  await notifyWaitlistOnSpotOpened(booking.slotId);
 
   // BRD §4.8: 3 strikes in 90 days → suspend coach.
   const newStrikes = profile.cancellationStrikes + 1;

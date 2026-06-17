@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { format, isPast } from "date-fns";
-import { Calendar, CheckCircle2, XCircle } from "lucide-react";
+import { Calendar, CheckCircle2, XCircle, CalendarPlus } from "lucide-react";
 import { requireRole } from "@/server/auth/current-user";
 import { getCoachBookings } from "@/server/repositories/bookings";
 import { completeSession, coachCancelBooking } from "@/server/booking/complete";
@@ -156,6 +157,15 @@ export default async function CoachBookingsPage({
                         <XCircle className="w-3.5 h-3.5" /> Cancel
                       </button>
                     </form>
+                  )}
+                  {b.status === "completed" && (
+                    <Link
+                      href={`/dashboard/coach/slots/new?sessionType=${encodeURIComponent(b.sessionType)}&durationMin=${b.durationMin}&feeGBP=${b.slotFeeMinor / 100}${b.venueId ? `&venueId=${b.venueId}` : ""}${b.sportId ? `&sportId=${b.sportId}` : ""}`}
+                      title="Recreate this slot"
+                      className="flex items-center gap-1.5 text-xs font-bold text-brand hover:text-brand-dark border border-brand/30 px-3 py-1.5 rounded-full transition-colors"
+                    >
+                      <CalendarPlus className="w-3.5 h-3.5" /> Recreate slot
+                    </Link>
                   )}
                 </div>
               </div>
