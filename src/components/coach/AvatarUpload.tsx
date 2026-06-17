@@ -3,6 +3,7 @@
 import { useActionState, useRef } from 'react';
 import { Camera, CheckCircle2, Loader2 } from 'lucide-react';
 import { updateAvatar, type ProfileState } from '@/server/coach/actions';
+import { usePendingLoader } from '@/components/providers/LoadingProvider';
 
 export function AvatarUpload({ currentImage }: { currentImage: string | null }) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -10,6 +11,7 @@ export function AvatarUpload({ currentImage }: { currentImage: string | null }) 
   const hiddenRef = useRef<HTMLInputElement>(null);
 
   const [state, action, pending] = useActionState<ProfileState, FormData>(updateAvatar, undefined);
+  usePendingLoader(pending);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

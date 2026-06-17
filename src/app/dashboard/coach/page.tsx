@@ -12,6 +12,7 @@ import { StatCard } from "@/components/dashboard/DashboardShell";
 import { CoachShell } from "@/components/coach/CoachShell";
 import { EarningsChart } from "@/components/coach/EarningsChart";
 import { gbp } from "@/lib/money";
+import { FormPendingLoader } from "@/components/ui/FormPendingLoader";
 
 export default async function CoachDashboard() {
   const user = await requireRole("coach");
@@ -130,6 +131,7 @@ export default async function CoachDashboard() {
                       <span className="text-brand font-bold">{gbp(b.coachFeeMinor)}</span>
                       {b.status === "confirmed" && past && (
                         <form action={completeSession}>
+                          <FormPendingLoader />
                           <input type="hidden" name="bookingId" value={b.id} />
                           <button type="submit" title="Mark completed" className="text-brand hover:text-brand-dark transition-colors">
                             <CheckCircle2 className="w-4 h-4" />
@@ -138,6 +140,7 @@ export default async function CoachDashboard() {
                       )}
                       {b.status === "confirmed" && !past && (
                         <form action={coachCancelBooking}>
+                          <FormPendingLoader />
                           <input type="hidden" name="bookingId" value={b.id} />
                           <button type="submit" title="Cancel booking" className="text-white/30 hover:text-red-400 transition-colors">
                             <XCircle className="w-4 h-4" />

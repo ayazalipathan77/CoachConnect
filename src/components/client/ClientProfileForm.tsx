@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { updateClientProfile, type ClientProfileState } from '@/server/client/actions';
 import { format } from 'date-fns';
+import { usePendingLoader } from '@/components/providers/LoadingProvider';
 
 type Props = {
   defaultValues: {
@@ -19,6 +20,7 @@ export function ClientProfileForm({ defaultValues: d }: Props) {
     updateClientProfile,
     undefined,
   );
+  usePendingLoader(pending);
 
   const dobStr = d.dob ? format(d.dob, 'yyyy-MM-dd') : '';
 

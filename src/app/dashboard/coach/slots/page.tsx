@@ -9,6 +9,7 @@ import { getWaitlistForCoach } from "@/server/repositories/waitlist";
 import { cancelSlot } from "@/server/coach/actions";
 import { CoachShell } from "@/components/coach/CoachShell";
 import { gbp } from "@/lib/money";
+import { FormPendingLoader } from "@/components/ui/FormPendingLoader";
 
 const STATUS_STYLE: Record<string, string> = {
   open: "bg-brand/10 text-brand border-brand/20",
@@ -141,6 +142,7 @@ function SlotList({ slots, coachProfileId: _, waitlistCounts }: { slots: Slot[];
                   <Pencil className="w-3 h-3" /> Edit
                 </Link>
                 <form action={cancelSlot}>
+                  <FormPendingLoader />
                   <input type="hidden" name="slotId" value={slot.id} />
                   <button
                     type="submit"

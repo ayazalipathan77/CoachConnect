@@ -3,6 +3,7 @@ import { BadgeCheck, ShieldOff, UserCheck, UserX } from "lucide-react";
 import Link from "next/link";
 import { db, schema } from "@/server/db";
 import { verifyCoach, rejectCoach, suspendCoach, activateCoach } from "@/server/admin/actions";
+import { FormPendingLoader } from "@/components/ui/FormPendingLoader";
 
 const VSTYLE: Record<string, string> = {
   verified: "bg-brand/10 text-brand border-brand/20",
@@ -59,6 +60,7 @@ export default async function AdminCoachesPage() {
               <div className="flex items-center gap-2 flex-wrap">
                 {c.verificationStatus !== "verified" && (
                   <form action={verifyCoach}>
+                    <FormPendingLoader />
                     <input type="hidden" name="coachId" value={c.id} />
                     <button type="submit" className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-brand/10 text-brand border border-brand/20 hover:bg-brand/20 transition-colors">
                       <BadgeCheck className="w-3.5 h-3.5" /> Verify
@@ -67,6 +69,7 @@ export default async function AdminCoachesPage() {
                 )}
                 {c.verificationStatus === "unverified" && (
                   <form action={rejectCoach}>
+                    <FormPendingLoader />
                     <input type="hidden" name="coachId" value={c.id} />
                     <button type="submit" className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-white/5 text-white/50 border border-white/10 hover:text-red-400 hover:border-red-500/20 transition-colors">
                       <UserX className="w-3.5 h-3.5" /> Reject
@@ -75,6 +78,7 @@ export default async function AdminCoachesPage() {
                 )}
                 {c.status === "active" ? (
                   <form action={suspendCoach}>
+                    <FormPendingLoader />
                     <input type="hidden" name="coachId" value={c.id} />
                     <button type="submit" className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors">
                       <ShieldOff className="w-3.5 h-3.5" /> Suspend
@@ -82,6 +86,7 @@ export default async function AdminCoachesPage() {
                   </form>
                 ) : c.status === "paused" ? (
                   <form action={activateCoach}>
+                    <FormPendingLoader />
                     <input type="hidden" name="coachId" value={c.id} />
                     <button type="submit" className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors">
                       <UserCheck className="w-3.5 h-3.5" /> Activate

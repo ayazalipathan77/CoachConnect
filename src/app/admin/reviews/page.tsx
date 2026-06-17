@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { Star, Eye, EyeOff } from "lucide-react";
 import { db } from "@/server/db";
 import { hideReview, showReview } from "@/server/admin/actions";
+import { FormPendingLoader } from "@/components/ui/FormPendingLoader";
 
 export default async function AdminReviewsPage() {
   const rows = await db.execute<{
@@ -56,6 +57,7 @@ export default async function AdminReviewsPage() {
                   {r.comment && <p className="text-sm text-white/50 mt-1 leading-relaxed">{r.comment}</p>}
                 </div>
                 <form action={r.hidden ? showReview : hideReview}>
+                  <FormPendingLoader />
                   <input type="hidden" name="reviewId" value={r.id} />
                   <button type="submit" className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border border-white/10 text-white/50 hover:text-white hover:border-white/20 transition-colors">
                     {r.hidden

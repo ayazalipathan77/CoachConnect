@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react';
 import { Loader2, CalendarPlus, Info } from 'lucide-react';
 import { createSlot, type SlotState } from '@/server/coach/actions';
 import { ThemedSelect } from '@/components/ui/ThemedSelect';
+import { usePendingLoader } from '@/components/providers/LoadingProvider';
 
 const SESSION_TYPES = ['Beginner Lesson', 'Technique Drill', 'Fitness', 'Match Practice', 'Assessment'];
 const DURATIONS = [15, 30, 45, 60, 90];
@@ -30,6 +31,7 @@ export function SlotForm({
   defaults?: SlotFormDefaults;
 }) {
   const [state, action, pending] = useActionState<SlotState, FormData>(createSlot, undefined);
+  usePendingLoader(pending);
   const [venue, setVenue] = useState(defaults?.venueId ?? venues[0]?.id ?? 'new');
 
   return (

@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { updateCoachProfile, type ProfileState } from '@/server/coach/actions';
 import { ThemedSelect } from '@/components/ui/ThemedSelect';
+import { usePendingLoader } from '@/components/providers/LoadingProvider';
 
 const EXPERIENCE_LEVELS = [
   { value: 'beginner_friendly', label: 'Beginner-friendly' },
@@ -36,6 +37,7 @@ export function ProfileForm({ defaultValues: d }: Props) {
     updateCoachProfile,
     undefined,
   );
+  usePendingLoader(pending);
 
   return (
     <form action={action} className="flex flex-col gap-6">

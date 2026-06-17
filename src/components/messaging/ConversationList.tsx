@@ -6,6 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { MessageSquare, Loader2, ChevronDown } from 'lucide-react';
 import { loadMoreConversations } from '@/server/messaging/actions';
 import { CONVERSATIONS_PAGE_SIZE } from '@/lib/pagination';
+import { usePendingLoader } from '@/components/providers/LoadingProvider';
 
 type Conversation = {
   id: string;
@@ -31,6 +32,7 @@ export function ConversationList({
 }) {
   const [items, setItems] = useState<Conversation[]>(initial);
   const [isPending, startTransition] = useTransition();
+  usePendingLoader(isPending);
   const hasMore = items.length < totalCount && items.length % CONVERSATIONS_PAGE_SIZE === 0;
 
   function loadMore() {

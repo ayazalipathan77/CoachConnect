@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { requestPasswordReset, type ResetRequestState } from '@/server/auth/password-reset';
+import { usePendingLoader } from '@/components/providers/LoadingProvider';
 
 const input =
   'w-full bg-surface border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all';
@@ -13,6 +14,7 @@ export function ForgotPasswordForm() {
     requestPasswordReset,
     undefined,
   );
+  usePendingLoader(pending);
 
   if (state?.success) {
     return (

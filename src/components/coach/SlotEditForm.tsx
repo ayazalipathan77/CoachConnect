@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react';
 import { Loader2, Save } from 'lucide-react';
 import { editSlot, type SlotState } from '@/server/coach/actions';
 import { ThemedSelect } from '@/components/ui/ThemedSelect';
+import { usePendingLoader } from '@/components/providers/LoadingProvider';
 
 const SESSION_TYPES = ['Beginner Lesson', 'Technique Drill', 'Fitness', 'Match Practice', 'Assessment'];
 const DURATIONS = [15, 30, 45, 60, 90];
@@ -28,6 +29,7 @@ type Props = {
 
 export function SlotEditForm({ slotId, venues, sports, defaults }: Props) {
   const [state, action, pending] = useActionState<SlotState, FormData>(editSlot, undefined);
+  usePendingLoader(pending);
   const [venue, setVenue] = useState(defaults.venueId ?? 'new');
 
   return (

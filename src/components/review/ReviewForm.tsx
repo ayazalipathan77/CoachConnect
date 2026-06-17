@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react';
 import { Star, Loader2, CheckCircle2 } from 'lucide-react';
 import { leaveReview, type ReviewState } from '@/server/review/actions';
+import { usePendingLoader } from '@/components/providers/LoadingProvider';
 
 const REVIEW_TAGS = [
   'Punctual',
@@ -15,6 +16,7 @@ const REVIEW_TAGS = [
 
 export function ReviewForm({ bookingId, coachName }: { bookingId: string; coachName: string }) {
   const [state, action, pending] = useActionState<ReviewState, FormData>(leaveReview, undefined);
+  usePendingLoader(pending);
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);

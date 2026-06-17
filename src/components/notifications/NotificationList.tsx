@@ -6,6 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Bell, BookCheck, MessageSquare, Star, XCircle, Loader2, ChevronDown } from 'lucide-react';
 import { loadMoreNotifications } from '@/server/notifications/actions';
 import { NOTIFICATIONS_PAGE_SIZE } from '@/lib/pagination';
+import { usePendingLoader } from '@/components/providers/LoadingProvider';
 
 const TYPE_ICON: Record<string, React.FC<{ className?: string }>> = {
   booking_confirmed: BookCheck,
@@ -35,6 +36,7 @@ export function NotificationList({
 }) {
   const [items, setItems] = useState<Notification[]>(initial);
   const [isPending, startTransition] = useTransition();
+  usePendingLoader(isPending);
   const hasMore = items.length < totalCount && items.length % NOTIFICATIONS_PAGE_SIZE === 0;
 
   function loadMore() {

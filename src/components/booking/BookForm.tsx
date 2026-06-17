@@ -3,12 +3,14 @@
 import { useActionState } from 'react';
 import { Loader2, Lock } from 'lucide-react';
 import { confirmBooking, type BookState } from '@/server/booking/actions';
+import { usePendingLoader } from '@/components/providers/LoadingProvider';
 
 export function BookForm({ slotId, total }: { slotId: string; total: string }) {
   const [state, action, pending] = useActionState<BookState, FormData>(
     confirmBooking,
     undefined,
   );
+  usePendingLoader(pending);
 
   return (
     <form action={action} className="flex flex-col gap-4">

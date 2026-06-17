@@ -12,6 +12,7 @@ import { refundPercent } from "@/lib/cancellation";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { ReviewForm } from "@/components/review/ReviewForm";
 import { gbp } from "@/lib/money";
+import { FormPendingLoader } from "@/components/ui/FormPendingLoader";
 
 const STATUS_STYLE: Record<string, string> = {
   confirmed: "bg-brand/10 text-brand border-brand/30",
@@ -145,6 +146,7 @@ export default async function BookingsPage({
                     {w.status}
                   </span>
                   <form action={leaveWaitlist}>
+                    <FormPendingLoader />
                     <input type="hidden" name="waitlistId" value={w.id} />
                     <button
                       type="submit"
@@ -215,6 +217,7 @@ function BookingCard({
             {REFUND_LABEL[pct]}
           </p>
           <form action={cancelBooking}>
+            <FormPendingLoader />
             <input type="hidden" name="bookingId" value={b.id} />
             <button
               type="submit"

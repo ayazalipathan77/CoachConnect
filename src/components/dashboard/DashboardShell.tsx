@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { LogOut } from 'lucide-react';
 import { Logo } from '@/components/landing/Logo';
 import { logout } from '@/server/auth/actions';
+import { FormPendingLoader } from '@/components/ui/FormPendingLoader';
 import { countUnread, getNotifications } from '@/server/repositories/notifications';
 import { getConversations } from '@/server/repositories/messages';
 import { NotifDropdown } from '@/components/dashboard/NotifDropdown';
@@ -36,6 +37,7 @@ export async function DashboardShell({
               {user.name ?? user.email}
             </span>
             <form action={logout}>
+              <FormPendingLoader />
               <button
                 type="submit"
                 className="inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-brand transition-colors"

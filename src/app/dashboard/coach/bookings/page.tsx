@@ -6,6 +6,7 @@ import { getCoachBookings } from "@/server/repositories/bookings";
 import { completeSession, coachCancelBooking } from "@/server/booking/complete";
 import { CoachShell } from "@/components/coach/CoachShell";
 import { gbp } from "@/lib/money";
+import { FormPendingLoader } from "@/components/ui/FormPendingLoader";
 
 const STATUS_STYLE: Record<string, string> = {
   confirmed: "bg-blue-500/10 text-blue-400 border-blue-500/20",
@@ -136,6 +137,7 @@ export default async function CoachBookingsPage({
 
                   {b.status === "confirmed" && past && (
                     <form action={completeSession}>
+                      <FormPendingLoader />
                       <input type="hidden" name="bookingId" value={b.id} />
                       <button
                         type="submit"
@@ -148,6 +150,7 @@ export default async function CoachBookingsPage({
                   )}
                   {b.status === "confirmed" && !past && (
                     <form action={coachCancelBooking}>
+                      <FormPendingLoader />
                       <input type="hidden" name="bookingId" value={b.id} />
                       <button
                         type="submit"

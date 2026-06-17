@@ -10,6 +10,7 @@ import { getCoachDocuments } from "@/server/repositories/media";
 import { getCurrentUser } from "@/server/auth/current-user";
 import { startConversation } from "@/server/messaging/actions";
 import { gbp } from "@/lib/money";
+import { FormPendingLoader } from "@/components/ui/FormPendingLoader";
 
 const LEVEL_LABEL: Record<string, string> = {
   beginner_friendly: "Beginner-friendly",
@@ -113,6 +114,7 @@ export default async function CoachProfilePage({
             {canMessage && (
               <section className="mt-6 max-w-2xl">
                 <form action={startConversation}>
+                  <FormPendingLoader />
                   <input type="hidden" name="coachUserId" value={coach.userId} />
                   <button
                     type="submit"

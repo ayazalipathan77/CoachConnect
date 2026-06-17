@@ -3,6 +3,8 @@
 import { useActionState, useRef, useState } from 'react';
 import { FileText, Trash2, Upload, Loader2, CheckCircle2, Clock, ShieldCheck, X } from 'lucide-react';
 import { uploadCoachDocument, deleteCoachDocument, type MediaState } from '@/server/coach/media-actions';
+import { usePendingLoader } from '@/components/providers/LoadingProvider';
+import { FormPendingLoader } from '@/components/ui/FormPendingLoader';
 
 type Doc = {
   id: string;
@@ -28,6 +30,7 @@ function formatBytes(bytes: number | null) {
 
 export function DocumentsManager({ existing }: { existing: Doc[] }) {
   const [state, action, pending] = useActionState<MediaState, FormData>(uploadCoachDocument, undefined);
+  usePendingLoader(pending);
   const fileRef = useRef<HTMLInputElement>(null);
   const dataUrlRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState('');
@@ -96,6 +99,7 @@ export function DocumentsManager({ existing }: { existing: Doc[] }) {
                   </a>
                 )}
                 <form action={deleteCoachDocument}>
+                  <FormPendingLoader />
                   <input type="hidden" name="mediaId" value={doc.id} />
                   <button
                     type="submit"

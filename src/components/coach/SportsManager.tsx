@@ -4,6 +4,8 @@ import { useActionState } from 'react';
 import { X, Plus } from 'lucide-react';
 import { addCoachSport, removeCoachSport } from '@/server/coach/actions';
 import { ThemedSelect } from '@/components/ui/ThemedSelect';
+import { FormPendingLoader } from '@/components/ui/FormPendingLoader';
+import { usePendingLoader } from '@/components/providers/LoadingProvider';
 
 type Sport = { id: string; name: string };
 
@@ -18,6 +20,7 @@ export function SportsManager({
     async (_: unknown, formData: FormData) => { await addCoachSport(formData); },
     undefined,
   );
+  usePendingLoader(addPending);
 
   const available = allSports.filter((s) => !currentSports.some((c) => c.id === s.id));
 
@@ -28,6 +31,7 @@ export function SportsManager({
         <div className="flex flex-wrap gap-2">
           {currentSports.map((sport) => (
             <form key={sport.id} action={removeCoachSport} className="inline-flex">
+              <FormPendingLoader />
               <input type="hidden" name="sportId" value={sport.id} />
               <button
                 type="submit"

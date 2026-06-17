@@ -12,6 +12,7 @@ import { getCurrentUser } from "@/server/auth/current-user";
 import { db, schema } from "@/server/db";
 import { eq } from "drizzle-orm";
 import { gbp } from "@/lib/money";
+import { FormPendingLoader } from "@/components/ui/FormPendingLoader";
 
 export default async function BookPage({
   params,
@@ -104,6 +105,7 @@ export default async function BookPage({
                   </p>
                 ) : (
                   <form action={joinWaitlist}>
+                    <FormPendingLoader />
                     <input type="hidden" name="coachId" value={slot.coachId} />
                     <input type="hidden" name="slotId" value={slot.id} />
                     <button

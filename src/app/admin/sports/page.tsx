@@ -2,6 +2,7 @@ import { asc } from "drizzle-orm";
 import { db, schema } from "@/server/db";
 import { toggleSport } from "@/server/admin/actions";
 import { AddSportForm } from "@/components/admin/AddSportForm";
+import { FormPendingLoader } from "@/components/ui/FormPendingLoader";
 
 export default async function AdminSportsPage() {
   const sports = await db
@@ -29,6 +30,7 @@ export default async function AdminSportsPage() {
                   <div key={s.id} className={`flex items-center justify-between gap-4 bg-[#111111] border rounded-xl px-5 py-3 ${s.active ? "border-white/10" : "border-white/5 opacity-50"}`}>
                     <span className="font-medium text-sm">{s.name}</span>
                     <form action={toggleSport}>
+                      <FormPendingLoader />
                       <input type="hidden" name="sportId" value={s.id} />
                       <input type="hidden" name="active" value={String(s.active)} />
                       <button type="submit" className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-colors ${s.active ? "border-red-500/20 text-red-400 hover:bg-red-500/10" : "border-brand/20 text-brand hover:bg-brand/10"}`}>

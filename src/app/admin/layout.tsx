@@ -4,6 +4,7 @@ import { LayoutDashboard, Users, Star, Dumbbell, LogOut } from "lucide-react";
 import { getCurrentUser } from "@/server/auth/current-user";
 import { Logo } from "@/components/landing/Logo";
 import { logout } from "@/server/auth/actions";
+import { FormPendingLoader } from "@/components/ui/FormPendingLoader";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
@@ -41,6 +42,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <div className="px-3 py-4 border-t border-white/10">
           <p className="text-xs text-white/30 px-3 mb-2 truncate">{user.email}</p>
           <form action={logout}>
+            <FormPendingLoader />
             <button type="submit" className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/40 hover:text-red-400 hover:bg-red-500/5 transition-colors">
               <LogOut className="w-4 h-4" /> Sign out
             </button>
