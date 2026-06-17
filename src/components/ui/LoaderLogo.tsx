@@ -17,12 +17,6 @@ export function LoaderLogo({ className = 'w-20 h-20 sm:w-28 sm:h-28' }: { classN
       animate={{ rotate: 360 }}
       transition={{ duration: 3, ease: 'linear', repeat: Infinity }}
     >
-      <circle
-        cx="18" cy="18" r="14"
-        stroke="rgba(255,255,255,0.15)"
-        strokeWidth="3"
-        strokeDasharray="4 4"
-      />
       <motion.path
         d="M 6 18 C 6 10 12 4 18 4 C 24 4 30 10 30 18"
         stroke="#CCFF00"

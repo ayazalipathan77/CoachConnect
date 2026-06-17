@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Menu, X, ArrowRight } from 'lucide-react';
 import { Logo } from './Logo';
+import { HashLink } from './HashLink';
 
 const NAV_LINKS = [
   { label: 'Find a Coach', href: '/discover' },
@@ -89,7 +90,7 @@ export function MobileNav({
         {/* Nav links */}
         <nav className="flex flex-col px-4 py-6 gap-1 flex-1">
           {NAV_LINKS.map((link) => (
-            <Link
+            <HashLink
               key={link.href}
               href={link.href}
               onClick={close}
@@ -97,7 +98,7 @@ export function MobileNav({
             >
               {link.label}
               <ArrowRight className="w-4 h-4 opacity-30" />
-            </Link>
+            </HashLink>
           ))}
         </nav>
 

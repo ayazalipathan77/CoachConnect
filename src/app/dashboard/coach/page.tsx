@@ -40,8 +40,11 @@ export default async function CoachDashboard() {
   const totalCommission = earnings.reduce((s, e) => s + e.commission, 0);
   const totalMissed = earnings.reduce((s, e) => s + e.missed, 0);
   const upcomingBookings = bookings.filter((b) => !isPast(b.startAt) && b.status === "confirmed");
+  // Realized earnings only — matches the escrow model (funds release on
+  // completion) and the chart below, which also excludes confirmed-but-not-
+  // yet-completed bookings.
   const earningsMinor = bookings
-    .filter((b) => b.status === "confirmed" || b.status === "completed")
+    .filter((b) => b.status === "completed")
     .reduce((sum, b) => sum + b.coachFeeMinor, 0);
 
   return (
@@ -67,7 +70,7 @@ export default async function CoachDashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Earnings" value={gbp(earningsMinor)} hint="Confirmed + completed" />
+        <StatCard label="Earnings" value={gbp(earningsMinor)} hint="Completed sessions" />
         <StatCard label="Upcoming" value={String(upcomingBookings.length)} hint="Confirmed bookings" />
         <StatCard label="Open slots" value={String(openSlots.length)} />
         <StatCard label="Rating" value={profile?.ratingAvg ? profile.ratingAvg.toFixed(1) : "—"} hint={`${profile?.ratingCount ?? 0} reviews`} />

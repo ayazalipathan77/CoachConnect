@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { ArrowRight, PlayCircle } from 'lucide-react';
+import { HashLink } from './HashLink';
 
 const stats = [
   { num: '8,400', suffix: '+', label: 'Verified coaches' },
@@ -53,10 +54,10 @@ export function Hero() {
               Find a Coach
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
-            <Link href="/#how-it-works" className="bg-transparent text-white border border-white/20 px-8 py-4 rounded-full font-bold text-lg hover:bg-white/10 transition-all flex items-center gap-2">
+            <HashLink href="/#how-it-works" className="bg-transparent text-white border border-white/20 px-8 py-4 rounded-full font-bold text-lg hover:bg-white/10 transition-all flex items-center gap-2">
               <PlayCircle className="w-5 h-5" />
               See How it Works
-            </Link>
+            </HashLink>
           </motion.div>
         </div>
 

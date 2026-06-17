@@ -8,12 +8,16 @@ import { SportsShowcase } from "@/components/landing/SportsShowcase";
 import { Testimonials } from "@/components/landing/Testimonials";
 import { BecomeCoachTeaser } from "@/components/landing/BecomeCoachTeaser";
 import { CoachDiscovery } from "@/components/landing/CoachDiscovery";
+import { HashScrollOnMount } from "@/components/landing/HashScrollOnMount";
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-brand selection:text-black">
       {/* Fixed global track background */}
       <TrackBackground />
+
+      {/* Handles /#how-it-works links clicked from a different route. */}
+      <HashScrollOnMount />
 
       <SiteHeader />
 

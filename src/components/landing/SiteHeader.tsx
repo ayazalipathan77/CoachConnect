@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Logo } from './Logo';
 import { MobileNav } from './MobileNav';
+import { HashLink } from './HashLink';
 import { getCurrentUser } from '@/server/auth/current-user';
 
 export async function SiteHeader() {
@@ -21,7 +22,7 @@ export async function SiteHeader() {
         {/* Desktop nav */}
         <nav className="hidden md:flex flex-1 items-center justify-center gap-8 text-sm font-medium text-white/70">
           <Link href="/discover" className="hover:text-brand transition-colors">Find a Coach</Link>
-          <Link href="/#how-it-works" className="hover:text-brand transition-colors">How it Works</Link>
+          <HashLink href="/#how-it-works" className="hover:text-brand transition-colors">How it Works</HashLink>
           <Link href="/about" className="hover:text-brand transition-colors">About Us</Link>
           <Link href="/become-a-coach" className="hover:text-brand transition-colors">Become a Coach</Link>
         </nav>
