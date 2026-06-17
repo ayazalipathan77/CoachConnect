@@ -29,7 +29,7 @@ const perks = [
 
 export function BecomeCoach() {
   return (
-    <section id="become-coach" className="relative py-32 z-10 bg-[#0a0a0a] border-t border-white/5 overflow-hidden">
+    <section className="relative py-32 z-10 bg-[#0a0a0a] border-t border-white/5 overflow-hidden">
       {/* Ambient gradient */}
       <div className="absolute bottom-0 left-1/3 w-[700px] h-[400px] bg-brand/8 rounded-full blur-[140px] pointer-events-none" />
 

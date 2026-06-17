@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { label: 'Find a Coach', href: '/discover' },
   { label: 'How it Works', href: '/#how-it-works' },
   { label: 'About Us', href: '/about' },
-  { label: 'Become a Coach', href: '/#become-coach' },
+  { label: 'Become a Coach', href: '/become-a-coach' },
 ];
 
 function subscribeNever() {

@@ -23,7 +23,7 @@ export async function SiteHeader() {
           <Link href="/discover" className="hover:text-brand transition-colors">Find a Coach</Link>
           <Link href="/#how-it-works" className="hover:text-brand transition-colors">How it Works</Link>
           <Link href="/about" className="hover:text-brand transition-colors">About Us</Link>
-          <Link href="/#become-coach" className="hover:text-brand transition-colors">Become a Coach</Link>
+          <Link href="/become-a-coach" className="hover:text-brand transition-colors">Become a Coach</Link>
         </nav>
 
         {/* Desktop auth */}

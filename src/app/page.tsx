@@ -6,7 +6,7 @@ import { HowItWorks } from "@/components/landing/HowItWorks";
 import { FeaturesScroll } from "@/components/landing/FeaturesScroll";
 import { SportsShowcase } from "@/components/landing/SportsShowcase";
 import { Testimonials } from "@/components/landing/Testimonials";
-import { BecomeCoach } from "@/components/landing/BecomeCoach";
+import { BecomeCoachTeaser } from "@/components/landing/BecomeCoachTeaser";
 import { CoachDiscovery } from "@/components/landing/CoachDiscovery";
 
 export default function HomePage() {
@@ -17,17 +17,19 @@ export default function HomePage() {
 
       <SiteHeader />
 
-      {/* Main Content — order: Hero → Coaches → How it Works → Services → Disciplines → Testimonials → Become a Coach.
+      {/* Main Content — order: Hero → Coaches (primary action) → Testimonials (trust,
+          early) → How it Works → Disciplines (browse) → Services (deep engagement) →
+          Become a Coach (teaser, full pitch lives at /become-a-coach).
           NOTE: no `overflow-hidden` here — it would break the sticky scroll-jacking
           in FeaturesScroll. Horizontal overflow is clipped by `body { overflow-x: clip }`. */}
       <main className="relative z-10 w-full">
         <Hero />
         <CoachDiscovery />
-        <HowItWorks />
-        <FeaturesScroll />
-        <SportsShowcase />
         <Testimonials />
-        <BecomeCoach />
+        <HowItWorks />
+        <SportsShowcase />
+        <FeaturesScroll />
+        <BecomeCoachTeaser />
       </main>
 
       <SiteFooter />

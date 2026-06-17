@@ -9,7 +9,7 @@ export function SiteFooter() {
         <nav className="flex items-center gap-8 text-sm text-white/50">
           <Link href="/#discover" className="hover:text-brand transition-colors">Find a Coach</Link>
           <Link href="/about" className="hover:text-brand transition-colors">About Us</Link>
-          <Link href="/#become-coach" className="hover:text-brand transition-colors">Become a Coach</Link>
+          <Link href="/become-a-coach" className="hover:text-brand transition-colors">Become a Coach</Link>
         </nav>
         <p className="text-white/40 text-sm">
           © 2026 CoachConnect Platform. All rights reserved. MVP Release.
