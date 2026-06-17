@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Menu, X, ArrowRight } from 'lucide-react';
@@ -13,6 +13,15 @@ const NAV_LINKS = [
   { label: 'Become a Coach', href: '/#become-coach' },
 ];
 
+function subscribeNever() {
+  return () => {};
+}
+
+/** True only after hydration — document.body doesn't exist on the server. */
+function useMounted(): boolean {
+  return useSyncExternalStore(subscribeNever, () => true, () => false);
+}
+
 export function MobileNav({
   user,
   dashHref,
@@ -21,10 +30,7 @@ export function MobileNav({
   dashHref: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  // Only portal after hydration — document.body doesn't exist on the server.
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';

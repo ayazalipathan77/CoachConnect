@@ -26,10 +26,16 @@ export default async function CoachDashboard() {
   const completeness = profile?.completeness ?? 0;
   const status = profile?.status ?? "pending_review";
 
-  const [bookings, recentReviews, earnings] = await Promise.all([
+  const [bookings, recentReviews, earnings, openSlots] = await Promise.all([
     profile ? getCoachBookings(user.userId) : Promise.resolve([]),
     profile ? getCoachReviews(profile.id, 3) : Promise.resolve([]),
     profile ? getCoachEarnings(profile.id, 6) : Promise.resolve([]),
+    profile
+      ? db
+          .select({ id: schema.slots.id })
+          .from(schema.slots)
+          .where(and(eq(schema.slots.coachId, profile.id), eq(schema.slots.status, "open"), gt(schema.slots.startAt, new Date())))
+      : Promise.resolve([]),
   ]);
   const totalCommission = earnings.reduce((s, e) => s + e.commission, 0);
   const totalMissed = earnings.reduce((s, e) => s + e.missed, 0);
@@ -37,12 +43,6 @@ export default async function CoachDashboard() {
   const earningsMinor = bookings
     .filter((b) => b.status === "confirmed" || b.status === "completed")
     .reduce((sum, b) => sum + b.coachFeeMinor, 0);
-  const openSlots = profile
-    ? await db
-        .select({ id: schema.slots.id })
-        .from(schema.slots)
-        .where(and(eq(schema.slots.coachId, profile.id), eq(schema.slots.status, "open"), gt(schema.slots.startAt, new Date())))
-    : [];
 
   return (
     <CoachShell user={user}>

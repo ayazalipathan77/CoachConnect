@@ -83,7 +83,7 @@ export default async function CoachProfilePage({
             {coach.philosophy && (
               <section className="mt-8">
                 <h2 className="font-display font-bold text-xl mb-3">Coaching philosophy</h2>
-                <p className="text-white/60 leading-relaxed max-w-2xl italic">"{coach.philosophy}"</p>
+                <p className="text-white/60 leading-relaxed max-w-2xl italic">&quot;{coach.philosophy}&quot;</p>
               </section>
             )}
 

@@ -19,6 +19,14 @@ export default async function NewSlotPage({
     sportId?: string;
   }>;
 }) {
+  // `sports` has no dependency on the coach profile — fire it immediately
+  // so it overlaps with the auth check + profile/venues lookups below
+  // instead of waiting behind them.
+  const sportsPromise = db
+    .select({ id: schema.sports.id, name: schema.sports.name })
+    .from(schema.sports)
+    .orderBy(schema.sports.name);
+
   const [user, sp] = await Promise.all([requireRole("coach"), searchParams]);
 
   const [profile] = await db
@@ -28,8 +36,8 @@ export default async function NewSlotPage({
     .limit(1);
 
   const [venues, sports] = await Promise.all([
-    profile ? getCoachVenues(profile.id) : [],
-    db.select({ id: schema.sports.id, name: schema.sports.name }).from(schema.sports).orderBy(schema.sports.name),
+    profile ? getCoachVenues(profile.id) : Promise.resolve([]),
+    sportsPromise,
   ]);
 
   const venueOpts = venues.map((v) => ({

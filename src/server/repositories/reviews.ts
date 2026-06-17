@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db, schema } from "@/server/db";
 
 export async function getCoachReviews(coachId: string, limit = 20) {
@@ -28,4 +28,17 @@ export async function hasReviewed(bookingId: string, clientProfileId: string) {
     .where(and(eq(schema.reviews.bookingId, bookingId), eq(schema.reviews.clientId, clientProfileId)))
     .limit(1);
   return rows.length > 0;
+}
+
+/** Which of the given booking IDs already have a review from this client — one round trip instead of N. */
+export async function getReviewedBookingIds(
+  bookingIds: string[],
+  clientProfileId: string,
+): Promise<Set<string>> {
+  if (bookingIds.length === 0) return new Set();
+  const rows = await db
+    .select({ bookingId: schema.reviews.bookingId })
+    .from(schema.reviews)
+    .where(and(inArray(schema.reviews.bookingId, bookingIds), eq(schema.reviews.clientId, clientProfileId)));
+  return new Set(rows.map((r) => r.bookingId));
 }

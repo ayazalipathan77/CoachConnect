@@ -14,6 +14,13 @@ export default async function EditSlotPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  // `sports` has no dependency on profile/slot — fire it immediately so it
+  // overlaps with the auth + profile + slot lookups below.
+  const sportsPromise = db
+    .select({ id: schema.sports.id, name: schema.sports.name })
+    .from(schema.sports)
+    .orderBy(schema.sports.name);
+
   const [user, { id: slotId }] = await Promise.all([requireRole("coach"), params]);
 
   const [profile] = await db
@@ -52,10 +59,7 @@ export default async function EditSlotPage({
     );
   }
 
-  const [venues, sports] = await Promise.all([
-    getCoachVenues(profile.id),
-    db.select({ id: schema.sports.id, name: schema.sports.name }).from(schema.sports).orderBy(schema.sports.name),
-  ]);
+  const [venues, sports] = await Promise.all([getCoachVenues(profile.id), sportsPromise]);
 
   const venueOpts = venues.map((v) => ({ id: v.id, label: v.city ? `${v.name} · ${v.city}` : v.name }));
   const sportOpts = sports.map((s) => ({ id: s.id, label: s.name }));

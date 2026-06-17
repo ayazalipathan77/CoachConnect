@@ -6,7 +6,7 @@ import { requireUser } from "@/server/auth/current-user";
 import { getClientBookings } from "@/server/repositories/bookings";
 import { getClientWaitlistEntries } from "@/server/repositories/waitlist";
 import { leaveWaitlist } from "@/server/booking/waitlist";
-import { hasReviewed } from "@/server/repositories/reviews";
+import { getReviewedBookingIds } from "@/server/repositories/reviews";
 import { cancelBooking } from "@/server/booking/cancel";
 import { refundPercent } from "@/lib/cancellation";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
@@ -28,9 +28,8 @@ export default async function BookingsPage({
 }: {
   searchParams: Promise<{ booked?: string; cancelled?: string }>;
 }) {
-  const user = await requireUser();
+  const [user, { booked, cancelled }] = await Promise.all([requireUser(), searchParams]);
   if (user.role === "coach") redirect("/dashboard/coach");
-  const { booked, cancelled } = await searchParams;
   const [bookings, waitlistEntries] = await Promise.all([
     getClientBookings(user.userId),
     getClientWaitlistEntries(user.userId),
@@ -39,22 +38,12 @@ export default async function BookingsPage({
   const upcoming = bookings.filter((b) => !isPast(b.startAt));
   const past = bookings.filter((b) => isPast(b.startAt));
 
-  // For past confirmed/completed bookings, check if already reviewed.
-  const reviewableIds = past
-    .filter((b) => b.status === "confirmed" || b.status === "completed")
-    .map((b) => b.id);
-
-  const reviewedSet = new Set(
-    (
-      await Promise.all(
-        reviewableIds.map(async (id) => {
-          const b = past.find((x) => x.id === id)!;
-          const done = await hasReviewed(id, b.clientProfileId);
-          return done ? id : null;
-        }),
-      )
-    ).filter(Boolean) as string[],
-  );
+  // For past confirmed/completed bookings, check if already reviewed —
+  // one query for all of them instead of one per booking.
+  const reviewable = past.filter((b) => b.status === "confirmed" || b.status === "completed");
+  const reviewedSet = reviewable.length > 0
+    ? await getReviewedBookingIds(reviewable.map((b) => b.id), reviewable[0]!.clientProfileId)
+    : new Set<string>();
 
   return (
     <DashboardShell user={user}>

@@ -72,7 +72,7 @@ export function Testimonials() {
               </div>
 
               <p className="font-sans text-white/80 text-lg leading-relaxed mb-8 flex-1 relative z-10">
-                "{t.quote}"
+                &quot;{t.quote}&quot;
               </p>
 
               <div className="flex items-center gap-4 mt-auto relative z-10">

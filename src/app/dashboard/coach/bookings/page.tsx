@@ -40,9 +40,12 @@ export default async function CoachBookingsPage({
 }) {
   const [user, sp] = await Promise.all([requireRole("coach"), searchParams]);
   const statusFilter = sp.status ?? "all";
-  const bookings = await getCoachBookings(user.userId, statusFilter);
 
   const allBookings = await getCoachBookings(user.userId);
+  const bookings =
+    statusFilter === "all"
+      ? allBookings
+      : allBookings.filter((b) => statusFilter.split(",").includes(b.status));
   const totalEarned = allBookings
     .filter((b) => b.status === "completed")
     .reduce((s, b) => s + b.coachFeeMinor, 0);
@@ -124,7 +127,7 @@ export default async function CoachBookingsPage({
                       {b.sessionType} · {b.durationMin} min · {format(b.startAt, "EEE d MMM yyyy · HH:mm")}
                     </p>
                     {b.clientMessage && (
-                      <p className="text-white/30 text-xs mt-1 truncate max-w-xs italic">"{b.clientMessage}"</p>
+                      <p className="text-white/30 text-xs mt-1 truncate max-w-xs italic">&quot;{b.clientMessage}&quot;</p>
                     )}
                   </div>
                 </div>

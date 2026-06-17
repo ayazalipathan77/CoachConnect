@@ -12,24 +12,38 @@ import { getCoachDocuments } from "@/server/repositories/media";
 export default async function CoachProfilePage() {
   const user = await requireRole("coach");
 
-  const [profile, userData, allSports, documents] = await Promise.all([
-    db
-      .select({
-        id: schema.coachProfiles.id,
-        headline: schema.coachProfiles.headline,
-        bio: schema.coachProfiles.bio,
-        philosophy: schema.coachProfiles.philosophy,
-        achievements: schema.coachProfiles.achievements,
-        experienceYears: schema.coachProfiles.experienceYears,
-        experienceLevel: schema.coachProfiles.experienceLevel,
-        defaultRateMinor: schema.coachProfiles.defaultRateMinor,
-        visibility: schema.coachProfiles.visibility,
-        completeness: schema.coachProfiles.completeness,
-      })
-      .from(schema.coachProfiles)
-      .where(eq(schema.coachProfiles.userId, user.userId))
-      .limit(1)
-      .then((r) => r[0] ?? null),
+  const profilePromise = db
+    .select({
+      id: schema.coachProfiles.id,
+      headline: schema.coachProfiles.headline,
+      bio: schema.coachProfiles.bio,
+      philosophy: schema.coachProfiles.philosophy,
+      achievements: schema.coachProfiles.achievements,
+      experienceYears: schema.coachProfiles.experienceYears,
+      experienceLevel: schema.coachProfiles.experienceLevel,
+      defaultRateMinor: schema.coachProfiles.defaultRateMinor,
+      visibility: schema.coachProfiles.visibility,
+      completeness: schema.coachProfiles.completeness,
+    })
+    .from(schema.coachProfiles)
+    .where(eq(schema.coachProfiles.userId, user.userId))
+    .limit(1)
+    .then((r) => r[0] ?? null);
+
+  // Starts the moment `profile` resolves instead of waiting on the
+  // unrelated userData/allSports/documents queries below too.
+  const currentSportsPromise = profilePromise.then((profile) =>
+    profile
+      ? db
+          .select({ id: schema.sports.id, name: schema.sports.name })
+          .from(schema.coachSports)
+          .innerJoin(schema.sports, eq(schema.sports.id, schema.coachSports.sportId))
+          .where(eq(schema.coachSports.coachId, profile.id))
+      : [],
+  );
+
+  const [profile, userData, allSports, documents, currentSports] = await Promise.all([
+    profilePromise,
     db
       .select({ locationCity: schema.users.locationCity, locationPostcode: schema.users.locationPostcode, image: schema.users.image })
       .from(schema.users)
@@ -42,15 +56,8 @@ export default async function CoachProfilePage() {
       .where(eq(schema.sports.active, true))
       .orderBy(schema.sports.name),
     getCoachDocuments(user.userId),
+    currentSportsPromise,
   ]);
-
-  const currentSports = profile
-    ? await db
-        .select({ id: schema.sports.id, name: schema.sports.name })
-        .from(schema.coachSports)
-        .innerJoin(schema.sports, eq(schema.sports.id, schema.coachSports.sportId))
-        .where(eq(schema.coachSports.coachId, profile.id))
-    : [];
 
   const completeness = profile?.completeness ?? 0;
 

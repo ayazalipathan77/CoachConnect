@@ -31,8 +31,9 @@ export default async function CoachSlotsPage({
     .where(eq(schema.coachProfiles.userId, user.userId))
     .limit(1);
 
-  const slots = profile ? await getCoachSlots(profile.id) : [];
-  const waitlistEntries = profile ? await getWaitlistForCoach(profile.id) : [];
+  const [slots, waitlistEntries] = profile
+    ? await Promise.all([getCoachSlots(profile.id), getWaitlistForCoach(profile.id)])
+    : [[], []];
   const waitlistCounts: Record<string, number> = {};
   for (const w of waitlistEntries) {
     if (w.slotId) waitlistCounts[w.slotId] = (waitlistCounts[w.slotId] ?? 0) + 1;

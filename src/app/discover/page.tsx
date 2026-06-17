@@ -27,13 +27,14 @@ export default async function DiscoverPage({
 
   const maps = createMapsProvider();
 
-  // Geocode the `near` query if provided (server-side, deterministic mock).
-  const nearGeo = sp.near ? await maps.geocode(sp.near) : null;
-
   const maxRateMinor = sp.maxPrice ? Math.round(parseFloat(sp.maxPrice) * 100) : undefined;
   const minRating = sp.minRating ? parseFloat(sp.minRating) : undefined;
 
-  const [coaches, sports] = await Promise.all([
+  // Geocoding `near` doesn't feed into listCoaches (proximity filtering
+  // happens client-side below on the already-fetched list), so run it
+  // alongside the coach/sports queries instead of blocking them.
+  const [nearGeo, coaches, sports] = await Promise.all([
+    sp.near ? maps.geocode(sp.near) : Promise.resolve(null),
     listCoaches({
       q: sp.q,
       sportSlug: sp.sport,
@@ -50,7 +51,7 @@ export default async function DiscoverPage({
 
   // For map view: enrich coaches with coordinates (geocode city if lat/lng missing).
   let mapPins: MapPin[] = [];
-  let mapCenter: [number, number] = nearGeo ? [nearGeo.lat, nearGeo.lng] : UK_CENTER;
+  const mapCenter: [number, number] = nearGeo ? [nearGeo.lat, nearGeo.lng] : UK_CENTER;
 
   if (isMapView) {
     const enriched = await Promise.all(
