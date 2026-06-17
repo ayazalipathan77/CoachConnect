@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { and, eq, lt, gt, ne, sql } from "drizzle-orm";
+import { and, eq, lt, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, schema } from "@/server/db";
@@ -135,10 +135,7 @@ export async function createSlot(
       and(
         eq(schema.slots.coachId, coachId),
         lt(schema.slots.startAt, endAt),
-        gt(
-          sql`${schema.slots.startAt} + ${schema.slots.durationMin} * interval '1 minute'`,
-          startAt,
-        ),
+        sql`${schema.slots.startAt} + ${schema.slots.durationMin} * interval '1 minute' > ${startAt.toISOString()}`,
       ),
     )
     .limit(1);
@@ -267,10 +264,7 @@ export async function editSlot(
         eq(schema.slots.coachId, coachId),
         ne(schema.slots.id, slotId),
         lt(schema.slots.startAt, endAt),
-        gt(
-          sql`${schema.slots.startAt} + ${schema.slots.durationMin} * interval '1 minute'`,
-          startAt,
-        ),
+        sql`${schema.slots.startAt} + ${schema.slots.durationMin} * interval '1 minute' > ${startAt.toISOString()}`,
       ),
     )
     .limit(1);
