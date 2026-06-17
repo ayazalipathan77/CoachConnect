@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { format, isPast } from "date-fns";
-import { Search, Calendar, Star, User } from "lucide-react";
+import { Search, Calendar, Star, User, CreditCard } from "lucide-react";
 import { requireUser } from "@/server/auth/current-user";
 import { getClientBookings } from "@/server/repositories/bookings";
 import { DashboardShell, StatCard } from "@/components/dashboard/DashboardShell";
@@ -48,7 +48,7 @@ export default async function AthleteDashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
         <div className="bg-[#111111] border border-white/10 rounded-3xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold flex items-center gap-2"><Calendar className="w-4 h-4 text-brand" /> Upcoming bookings</h3>
@@ -75,6 +75,13 @@ export default async function AthleteDashboard() {
           <p className="text-white/40 text-sm mb-4">Update your name, location, and preferred sports.</p>
           <Link href="/dashboard/profile" className="inline-flex items-center gap-2 text-sm font-bold text-brand hover:text-brand-dark transition-colors">
             Edit profile →
+          </Link>
+        </div>
+        <div className="bg-[#111111] border border-white/10 rounded-3xl p-6">
+          <h3 className="font-bold flex items-center gap-2 mb-4"><CreditCard className="w-4 h-4 text-brand" /> Payment methods</h3>
+          <p className="text-white/40 text-sm mb-4">Manage saved cards and your refund account.</p>
+          <Link href="/dashboard/payment-methods" className="inline-flex items-center gap-2 text-sm font-bold text-brand hover:text-brand-dark transition-colors">
+            Manage payment methods →
           </Link>
         </div>
       </div>

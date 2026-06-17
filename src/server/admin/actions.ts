@@ -114,3 +114,74 @@ export async function toggleSport(formData: FormData) {
   revalidatePath("/admin/sports");
   revalidatePath("/discover");
 }
+
+const adminCoachProfileSchema = z.object({
+  coachId: z.string().min(1),
+  headline: z.string().max(160).optional(),
+  bio: z.string().max(2000).optional(),
+  defaultRateGBP: z.coerce.number().min(0).optional(),
+  visibility: z.enum(["public", "unlisted", "paused"]),
+  status: z.enum(["pending_review", "active", "paused", "suspended"]),
+});
+
+export type AdminCoachState = { error?: string; success?: boolean } | undefined;
+
+/** Admin-side direct edit of a coach's profile — fields that don't touch auth. */
+export async function adminUpdateCoachProfile(
+  _prev: AdminCoachState,
+  formData: FormData,
+): Promise<AdminCoachState> {
+  await requireAdmin();
+  const parsed = adminCoachProfileSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  const d = parsed.data;
+
+  await db
+    .update(schema.coachProfiles)
+    .set({
+      headline: d.headline || null,
+      bio: d.bio || null,
+      defaultRateMinor: d.defaultRateGBP != null ? Math.round(d.defaultRateGBP * 100) : null,
+      visibility: d.visibility,
+      status: d.status,
+      updatedAt: new Date(),
+    })
+    .where(eq(schema.coachProfiles.id, d.coachId));
+
+  revalidatePath("/admin/coaches");
+  revalidatePath(`/admin/coaches/${d.coachId}/edit`);
+  revalidatePath(`/coach/${d.coachId}`);
+  return { success: true };
+}
+
+const adminUserSchema = z.object({
+  userId: z.string().min(1),
+  name: z.string().max(160).optional(),
+  email: z.string().email(),
+  role: z.enum(["coach", "client", "admin"]),
+});
+
+export type AdminUserState = { error?: string; success?: boolean } | undefined;
+
+/** Admin-side direct edit of a user's base account fields. */
+export async function adminUpdateUser(
+  _prev: AdminUserState,
+  formData: FormData,
+): Promise<AdminUserState> {
+  await requireAdmin();
+  const parsed = adminUserSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  const d = parsed.data;
+
+  try {
+    await db
+      .update(schema.users)
+      .set({ name: d.name || null, email: d.email, role: d.role, updatedAt: new Date() })
+      .where(eq(schema.users.id, d.userId));
+  } catch {
+    return { error: "That email is already in use." };
+  }
+
+  revalidatePath("/admin/users");
+  return { success: true };
+}

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, Star, BadgeCheck, ArrowRight } from 'lucide-react';
+import { MapPin, Star, BadgeCheck, ArrowRight, Sparkles } from 'lucide-react';
 import { gbp } from '@/lib/money';
 import type { CoachCard } from '@/server/repositories/coaches';
 
@@ -23,10 +23,17 @@ export function CoachGridCard({ coach }: { coach: CoachCard }) {
         ) : (
           <div className="w-full h-full bg-surface-light" />
         )}
-        <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-1.5">
-          <Star className="w-4 h-4 text-brand fill-brand" />
-          <span className="text-white font-bold text-sm">{coach.ratingAvg.toFixed(1)}</span>
-          <span className="text-white/60 text-xs">({coach.ratingCount})</span>
+        <div className="absolute top-4 left-4 flex flex-col items-start gap-2">
+          {coach.featured && (
+            <span className="inline-flex items-center gap-1 bg-brand text-black font-bold px-2.5 py-1 rounded-full text-xs">
+              <Sparkles className="w-3 h-3" /> Featured
+            </span>
+          )}
+          <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-1.5">
+            <Star className="w-4 h-4 text-brand fill-brand" />
+            <span className="text-white font-bold text-sm">{coach.ratingAvg.toFixed(1)}</span>
+            <span className="text-white/60 text-xs">({coach.ratingCount})</span>
+          </div>
         </div>
         <div className="absolute top-4 right-4 bg-brand text-black font-bold px-3 py-1 rounded-full text-sm shadow-[0_0_15px_rgba(204,255,0,0.4)]">
           {gbp(coach.rateMinor, { perHour: true })}

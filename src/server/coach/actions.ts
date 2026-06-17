@@ -73,7 +73,7 @@ export async function updateCoachProfile(
   return { success: true };
 }
 
-async function coachProfileId(userId: string): Promise<string | null> {
+export async function coachProfileId(userId: string): Promise<string | null> {
   const [c] = await db
     .select({ id: schema.coachProfiles.id })
     .from(schema.coachProfiles)

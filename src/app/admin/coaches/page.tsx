@@ -1,5 +1,5 @@
 import { desc, eq } from "drizzle-orm";
-import { BadgeCheck, ShieldOff, UserCheck, UserX } from "lucide-react";
+import { BadgeCheck, ShieldOff, UserCheck, UserX, Pencil } from "lucide-react";
 import Link from "next/link";
 import { db, schema } from "@/server/db";
 import { verifyCoach, rejectCoach, suspendCoach, activateCoach } from "@/server/admin/actions";
@@ -58,6 +58,12 @@ export default async function AdminCoachesPage() {
                 <p className="text-white/40 text-xs mt-1">{c.email} · {c.completeness}% complete · ★ {c.ratingAvg.toFixed(1)} ({c.ratingCount})</p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
+                <Link
+                  href={`/admin/coaches/${c.id}/edit`}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-white/5 text-white/60 border border-white/10 hover:text-white hover:border-white/20 transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Edit
+                </Link>
                 {c.verificationStatus !== "verified" && (
                   <form action={verifyCoach}>
                     <FormPendingLoader />

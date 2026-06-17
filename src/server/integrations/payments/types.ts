@@ -37,4 +37,13 @@ export interface PaymentProvider {
   releaseToCoach(paymentIntentId: string): Promise<void>;
   /** Refund all or part of a payment per cancellation policy. */
   refund(paymentIntentId: string, amountMinor: number): Promise<RefundResult>;
+  /**
+   * Direct, immediately-captured charge with no escrow step — used for
+   * one-off platform purchases like a coach's featured-placement promotion.
+   */
+  charge(
+    amountMinor: number,
+    currency: string,
+    metadata?: Record<string, string>,
+  ): Promise<PaymentIntentResult>;
 }

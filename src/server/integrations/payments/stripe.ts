@@ -70,4 +70,24 @@ export class StripePaymentProvider implements PaymentProvider {
       status: refund.status === "succeeded" ? "succeeded" : "pending",
     };
   }
+
+  async charge(
+    amountMinor: number,
+    currency: string,
+    metadata?: Record<string, string>,
+  ): Promise<PaymentIntentResult> {
+    const intent = await this.stripe.paymentIntents.create({
+      amount: amountMinor,
+      currency: currency.toLowerCase(),
+      // No escrow — captured immediately, unlike createBookingPayment.
+      confirm: true,
+      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
+      metadata,
+    });
+    return {
+      paymentIntentId: intent.id,
+      clientSecret: intent.client_secret ?? "",
+      status: intent.status === "succeeded" ? "succeeded" : "processing",
+    };
+  }
 }

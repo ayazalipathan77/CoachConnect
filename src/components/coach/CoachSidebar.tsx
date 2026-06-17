@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, CalendarDays, Clock, User, Star } from 'lucide-react';
+import { LayoutDashboard, CalendarDays, Clock, User, Star, Sparkles, Percent } from 'lucide-react';
 
 const NAV = [
   { label: 'Overview', href: '/dashboard/coach', icon: LayoutDashboard, exact: true },
   { label: 'Bookings', href: '/dashboard/coach/bookings', icon: CalendarDays, exact: false },
   { label: 'Slots', href: '/dashboard/coach/slots', icon: Clock, exact: false },
+  { label: 'Discounts', href: '/dashboard/coach/discounts', icon: Percent, exact: false },
+  { label: 'Featured', href: '/dashboard/coach/featured', icon: Sparkles, exact: false },
   { label: 'Profile', href: '/dashboard/coach/profile', icon: User, exact: false },
   { label: 'Reviews', href: '/dashboard/coach/reviews', icon: Star, exact: false },
 ];
