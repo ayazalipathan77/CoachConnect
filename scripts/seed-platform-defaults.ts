@@ -28,6 +28,7 @@ async function main() {
   }
 
   console.log("✓ Platform defaults seeded");
+  process.exit(0);
 }
 
 main().catch((err) => {
