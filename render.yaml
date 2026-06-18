@@ -5,6 +5,12 @@
 # already exist at build time), then the app builds, then idempotent seeds
 # run (free plan has no preDeploy step). AUTH_SECRET is auto-generated;
 # integrations default to mock.
+#
+# No cron job here: Render's Cron Job service type doesn't offer a free
+# plan. The /api/cron/reminders route (guarded by CRON_SECRET) still exists
+# in the app — point any free external scheduler (e.g. cron-job.org,
+# GitHub Actions on a schedule) at it if you want session reminders without
+# upgrading to a paid Render plan.
 
 databases:
   - name: coachconnect-db
@@ -51,35 +57,3 @@ services:
         value: GBP
       - key: CRON_SECRET
         generateValue: true
-
-  - type: cron
-    name: coachconnect-reminders
-    runtime: node
-    plan: free
-    region: frankfurt
-    schedule: "*/30 * * * *"
-    buildCommand: corepack enable && pnpm install --frozen-lockfile
-    startCommand: npx tsx scripts/cron-reminders.ts
-    envVars:
-      - key: NODE_VERSION
-        value: "20.20.0"
-      - key: DATABASE_URL
-        fromDatabase:
-          name: coachconnect-db
-          property: connectionString
-      - key: CRON_SECRET
-        fromService:
-          name: coachconnect
-          type: web
-          envVarKey: CRON_SECRET
-      - key: AUTH_SECRET
-        fromService:
-          name: coachconnect
-          type: web
-          envVarKey: AUTH_SECRET
-      - key: INTEGRATION_EMAIL
-        value: mock
-      - key: INTEGRATION_PUSH
-        value: mock
-      - key: INTEGRATION_PAYMENTS
-        value: mock
