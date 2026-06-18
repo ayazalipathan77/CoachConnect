@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, gt, ne } from "drizzle-orm";
 import { db, schema } from "@/server/db";
 
 export async function getCoachSlots(coachId: string) {
@@ -51,7 +51,13 @@ export async function getBookableSlot(slotId: string) {
     .innerJoin(schema.coachProfiles, eq(schema.coachProfiles.id, schema.slots.coachId))
     .innerJoin(schema.users, eq(schema.users.id, schema.coachProfiles.userId))
     .leftJoin(schema.venues, eq(schema.venues.id, schema.slots.venueId))
-    .where(and(eq(schema.slots.id, slotId), ne(schema.slots.status, "cancelled")))
+    .where(
+      and(
+        eq(schema.slots.id, slotId),
+        ne(schema.slots.status, "cancelled"),
+        gt(schema.slots.startAt, new Date()),
+      ),
+    )
     .limit(1);
   return row ?? null;
 }
