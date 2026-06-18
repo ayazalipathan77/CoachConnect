@@ -36,12 +36,7 @@ services:
       - key: DATABASE_URL
         fromDatabase:
           name: coachconnect-db
-          # External, not internal: the build phase runs in an isolated
-          # builder with no access to Render's private network, so
-          # `connectionString` (internal hostname) fails DNS resolution
-          # during `pnpm db:migrate` in buildCommand. The external URL
-          # works from both the build environment and at runtime.
-          property: externalConnectionString
+          property: connectionString
       - key: AUTH_SECRET
         generateValue: true
       - key: AUTH_TRUST_HOST
