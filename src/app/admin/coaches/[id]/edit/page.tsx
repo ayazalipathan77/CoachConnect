@@ -4,6 +4,8 @@ import { eq } from "drizzle-orm";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { db, schema } from "@/server/db";
 import { AdminCoachEditForm } from "@/components/admin/AdminCoachEditForm";
+import { AdminDocumentsReview } from "@/components/admin/AdminDocumentsReview";
+import { getCoachDocuments } from "@/server/repositories/media";
 
 export default async function AdminCoachEditPage({
   params,
@@ -15,6 +17,7 @@ export default async function AdminCoachEditPage({
   const [coach] = await db
     .select({
       id: schema.coachProfiles.id,
+      userId: schema.coachProfiles.userId,
       headline: schema.coachProfiles.headline,
       bio: schema.coachProfiles.bio,
       defaultRateMinor: schema.coachProfiles.defaultRateMinor,
@@ -29,6 +32,8 @@ export default async function AdminCoachEditPage({
     .limit(1);
 
   if (!coach) notFound();
+
+  const documents = await getCoachDocuments(coach.userId);
 
   return (
     <div className="max-w-2xl">
@@ -56,6 +61,14 @@ export default async function AdminCoachEditPage({
             status: coach.status,
           }}
         />
+      </div>
+
+      <div className="bg-[#111111] border border-white/10 rounded-3xl p-8 mt-6">
+        <h2 className="font-bold mb-1">Qualifications & documents</h2>
+        <p className="text-white/40 text-sm mb-5">
+          Approve a document to show it as verified on the coach&apos;s public profile.
+        </p>
+        <AdminDocumentsReview coachId={coach.id} documents={documents} />
       </div>
     </div>
   );

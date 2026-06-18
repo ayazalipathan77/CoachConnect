@@ -185,3 +185,30 @@ export async function adminUpdateUser(
   revalidatePath("/admin/users");
   return { success: true };
 }
+
+/** Approve a coach's uploaded document — only then does it show on their public profile. */
+export async function approveDocument(formData: FormData) {
+  await requireAdmin();
+  const documentId = String(formData.get("documentId") ?? "");
+  const coachId = String(formData.get("coachId") ?? "");
+  if (!documentId) return;
+  await db
+    .update(schema.media)
+    .set({ status: "approved" })
+    .where(eq(schema.media.id, documentId));
+  revalidatePath(`/admin/coaches/${coachId}/edit`);
+  revalidatePath(`/coach/${coachId}`);
+}
+
+export async function rejectDocument(formData: FormData) {
+  await requireAdmin();
+  const documentId = String(formData.get("documentId") ?? "");
+  const coachId = String(formData.get("coachId") ?? "");
+  if (!documentId) return;
+  await db
+    .update(schema.media)
+    .set({ status: "rejected" })
+    .where(eq(schema.media.id, documentId));
+  revalidatePath(`/admin/coaches/${coachId}/edit`);
+  revalidatePath(`/coach/${coachId}`);
+}

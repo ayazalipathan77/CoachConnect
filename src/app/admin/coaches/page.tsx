@@ -1,5 +1,5 @@
-import { desc, eq } from "drizzle-orm";
-import { BadgeCheck, ShieldOff, UserCheck, UserX, Pencil } from "lucide-react";
+import { and, desc, eq, sql } from "drizzle-orm";
+import { BadgeCheck, ShieldOff, UserCheck, UserX, Pencil, FileText } from "lucide-react";
 import Link from "next/link";
 import { db, schema } from "@/server/db";
 import { verifyCoach, rejectCoach, suspendCoach, activateCoach } from "@/server/admin/actions";
@@ -18,21 +18,33 @@ const SSTYLE: Record<string, string> = {
 };
 
 export default async function AdminCoachesPage() {
-  const coaches = await db
-    .select({
-      id: schema.coachProfiles.id,
-      status: schema.coachProfiles.status,
-      verificationStatus: schema.coachProfiles.verificationStatus,
-      completeness: schema.coachProfiles.completeness,
-      ratingAvg: schema.coachProfiles.ratingAvg,
-      ratingCount: schema.coachProfiles.ratingCount,
-      name: schema.users.name,
-      email: schema.users.email,
-      createdAt: schema.coachProfiles.createdAt,
-    })
-    .from(schema.coachProfiles)
-    .innerJoin(schema.users, eq(schema.users.id, schema.coachProfiles.userId))
-    .orderBy(desc(schema.coachProfiles.createdAt));
+  const [coaches, pendingDocRows] = await Promise.all([
+    db
+      .select({
+        id: schema.coachProfiles.id,
+        status: schema.coachProfiles.status,
+        verificationStatus: schema.coachProfiles.verificationStatus,
+        completeness: schema.coachProfiles.completeness,
+        ratingAvg: schema.coachProfiles.ratingAvg,
+        ratingCount: schema.coachProfiles.ratingCount,
+        name: schema.users.name,
+        email: schema.users.email,
+        createdAt: schema.coachProfiles.createdAt,
+      })
+      .from(schema.coachProfiles)
+      .innerJoin(schema.users, eq(schema.users.id, schema.coachProfiles.userId))
+      .orderBy(desc(schema.coachProfiles.createdAt)),
+    db
+      .select({
+        coachId: schema.coachProfiles.id,
+        pendingCount: sql<number>`count(*)`,
+      })
+      .from(schema.media)
+      .innerJoin(schema.coachProfiles, eq(schema.coachProfiles.userId, schema.media.ownerId))
+      .where(and(eq(schema.media.type, "document"), eq(schema.media.status, "pending")))
+      .groupBy(schema.coachProfiles.id),
+  ]);
+  const pendingDocCounts = new Map(pendingDocRows.map((r) => [r.coachId, Number(r.pendingCount)]));
 
   return (
     <div>
@@ -40,7 +52,9 @@ export default async function AdminCoachesPage() {
       <p className="text-white/40 text-sm mb-8">{coaches.length} coach profiles</p>
 
       <div className="flex flex-col gap-3">
-        {coaches.map((c) => (
+        {coaches.map((c) => {
+          const pendingDocs = pendingDocCounts.get(c.id) ?? 0;
+          return (
           <div key={c.id} className="bg-[#111111] border border-white/10 rounded-2xl px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="min-w-0">
@@ -54,6 +68,14 @@ export default async function AdminCoachesPage() {
                   <span className={`text-xs font-medium ${SSTYLE[c.status] ?? "text-white/40"}`}>
                     {c.status.replace(/_/g, " ")}
                   </span>
+                  {pendingDocs > 0 && (
+                    <Link
+                      href={`/admin/coaches/${c.id}/edit`}
+                      className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+                    >
+                      <FileText className="w-3 h-3" /> {pendingDocs} doc{pendingDocs > 1 ? "s" : ""} to review
+                    </Link>
+                  )}
                 </div>
                 <p className="text-white/40 text-xs mt-1">{c.email} · {c.completeness}% complete · ★ {c.ratingAvg.toFixed(1)} ({c.ratingCount})</p>
               </div>
@@ -102,7 +124,8 @@ export default async function AdminCoachesPage() {
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
