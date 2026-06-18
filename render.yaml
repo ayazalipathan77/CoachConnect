@@ -1,8 +1,10 @@
 # Render Blueprint for CoachConnect
 # Deploy: Render Dashboard → New → Blueprint → pick this repo (branch: main).
 # Provisions a managed Postgres 16 + a Node web service running Next.js.
-# Migrations and idempotent seeds run during the build (free plan has no
-# preDeploy step). AUTH_SECRET is auto-generated; integrations default to mock.
+# Migrations run BEFORE `next build` (some pages query tables that must
+# already exist at build time), then the app builds, then idempotent seeds
+# run (free plan has no preDeploy step). AUTH_SECRET is auto-generated;
+# integrations default to mock.
 
 databases:
   - name: coachconnect-db
@@ -20,7 +22,7 @@ services:
     branch: main
     autoDeploy: true
     healthCheckPath: /
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build && pnpm db:deploy
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm db:migrate && pnpm build && pnpm db:deploy
     startCommand: pnpm start
     envVars:
       - key: NODE_VERSION
