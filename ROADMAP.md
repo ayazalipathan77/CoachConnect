@@ -6,7 +6,7 @@
 
 **Legend:** ✅ Done · 🟡 In progress · 🔲 TODO · ⏭️ Deferred (Phase 2 / out of MVP scope)
 
-**Last updated:** 2026-06-15
+**Last updated:** 2026-06-18
 
 > **Progress so far:** Phase 0 ✅ · Phase 1 (auth) ✅ · Phase 3 (discovery) ✅ ·
 > Phase 4 core (booking + escrow) ✅. Live flow: sign up → discover coaches →
@@ -147,6 +147,26 @@
 | 7.4 | Lighthouse 80+ mobile | 🔲 | acceptance criterion #55 |
 | 7.5 | Security review (OWASP, zero crit/high) | 🔲 | acceptance criterion #56 |
 | 7.6 | E2E acceptance flows (coach 15-min, client 5-min) | 🔲 | criteria #49–50 |
+
+---
+
+## 💰 Phase 8 — Admin Enrichment & Coach Monetization ✅
+
+> Branch: `feature/admin-enrichment-monetization`. Admin mobile fix, platform
+> settings, direct user/coach editing, paid featured placement, coach-defined
+> discounts, and mock client payment-method/refund-account UI.
+
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| 8.1 | Admin mobile sidebar fix | ✅ | `AdminSidebar.tsx` — desktop vertical / mobile horizontal pill nav, mirrors `CoachSidebar` |
+| 8.2 | Admin platform settings page | ✅ | `platform_settings` table overrides `config.ts` commission rate / min fee; falls back to env defaults when unset |
+| 8.3 | Admin payments/payouts metadata | ✅ | Stripe account label, support email, payout instructions — config metadata only, **not** a place for live secrets (those stay env-var + redeploy) |
+| 8.4 | Admin direct coach profile edit | ✅ | `/admin/coaches/[id]/edit` — headline, bio, rate, visibility, status |
+| 8.5 | Admin users list + inline edit | ✅ | `/admin/users` — role filter, inline name/email/role edit |
+| 8.6 | Featured coach placement (paid) | ✅ | Admin-configurable plan catalog (`featured_plans`: key/label/duration/price), coach purchase flow at `/dashboard/coach/featured` charges via `PaymentProvider.charge()` (new provider method, mock + Stripe), `coach_profiles.featuredUntil` + `featured_promotions` audit trail |
+| 8.7 | Featured-first discovery sort | ✅ | `listCoaches`/`getCoachById` surface `featured`; discover grid shows a "Featured" badge, stable-sorted to the top |
+| 8.8 | Coach discount rules | ✅ | `/dashboard/coach/discounts` — flat % or early-bird (min days before start) rules, scoped to one slot or all open slots; applied automatically in `createBooking`, recorded on `bookings.discountMinor` |
+| 8.9 | Client payment methods / refund account (mock) | ✅ | `/dashboard/payment-methods` — masked card + bank details only, explicitly labeled as demo data, no real tokenization |
 
 ---
 

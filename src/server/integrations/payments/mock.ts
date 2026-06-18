@@ -58,4 +58,18 @@ export class MockPaymentProvider implements PaymentProvider {
       status: "succeeded",
     };
   }
+
+  async charge(amountMinor: number): Promise<PaymentIntentResult> {
+    const paymentIntentId = createId("pi");
+    this.intents.set(paymentIntentId, {
+      amountMinor,
+      released: true,
+      refundedMinor: 0,
+    });
+    return {
+      paymentIntentId,
+      clientSecret: `${paymentIntentId}_secret_mock`,
+      status: "succeeded",
+    };
+  }
 }

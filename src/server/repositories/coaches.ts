@@ -15,6 +15,7 @@ export type CoachCard = {
   ratingCount: number;
   rateMinor: number | null;
   verified: boolean;
+  featured: boolean;
   lat: number | null;
   lng: number | null;
 };
@@ -70,6 +71,7 @@ export async function listCoaches(opts: {
       ratingCount: schema.coachProfiles.ratingCount,
       rateMinor: schema.coachProfiles.defaultRateMinor,
       verificationStatus: schema.coachProfiles.verificationStatus,
+      featuredUntil: schema.coachProfiles.featuredUntil,
       lat: schema.users.lat,
       lng: schema.users.lng,
     })
@@ -84,6 +86,7 @@ export async function listCoaches(opts: {
     .orderBy(orderBy);
 
   // Dedupe coaches that match on multiple sport rows.
+  const now = Date.now();
   const seen = new Map<string, CoachCard>();
   for (const r of rows) {
     if (seen.has(r.id)) continue;
@@ -98,11 +101,14 @@ export async function listCoaches(opts: {
       ratingCount: r.ratingCount,
       rateMinor: r.rateMinor,
       verified: r.verificationStatus === "verified",
+      featured: !!r.featuredUntil && r.featuredUntil.getTime() > now,
       lat: r.lat,
       lng: r.lng,
     });
   }
-  return [...seen.values()];
+  // Featured coaches sort first; Array#sort is stable, so the existing
+  // relevance/price/rating order is preserved within each group.
+  return [...seen.values()].sort((a, b) => Number(b.featured) - Number(a.featured));
 }
 
 export async function getCoachById(id: string) {
@@ -123,6 +129,7 @@ export async function getCoachById(id: string) {
       ratingAvg: schema.coachProfiles.ratingAvg,
       ratingCount: schema.coachProfiles.ratingCount,
       verificationStatus: schema.coachProfiles.verificationStatus,
+      featuredUntil: schema.coachProfiles.featuredUntil,
     })
     .from(schema.coachProfiles)
     .innerJoin(schema.users, eq(schema.users.id, schema.coachProfiles.userId))
@@ -160,6 +167,7 @@ export async function getCoachById(id: string) {
   return {
     ...coach,
     verified: coach.verificationStatus === "verified",
+    featured: !!coach.featuredUntil && coach.featuredUntil.getTime() > Date.now(),
     sports: sports.map((s) => s.name),
     slots,
   };

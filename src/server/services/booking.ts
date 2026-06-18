@@ -4,14 +4,19 @@ import { db, schema } from "@/server/db";
 import { config } from "@/server/config";
 import { integrations } from "@/server/integrations";
 import { notifyBookingConfirmed } from "@/server/notifications/service";
+import { getPlatformSettings } from "@/server/repositories/settings";
+import { getBestDiscountForBooking } from "@/server/repositories/discounts";
 
 export type BookingResult =
   | { ok: true; bookingId: string }
   | { ok: false; error: string };
 
 /** Platform service fee for a given coach fee (BRD §8.2). */
-export function serviceFeeFor(coachFeeMinor: number): number {
-  return Math.round(coachFeeMinor * config.PLATFORM_COMMISSION_RATE);
+export function serviceFeeFor(
+  coachFeeMinor: number,
+  rate: number = config.PLATFORM_COMMISSION_RATE,
+): number {
+  return Math.round(coachFeeMinor * rate);
 }
 
 /**
@@ -56,8 +61,11 @@ export async function createBooking(input: {
     }
   }
 
-  const coachFee = slot.feeMinor;
-  const serviceFee = serviceFeeFor(coachFee);
+  const settings = await getPlatformSettings();
+  const discount = await getBestDiscountForBooking(slot.coachId, slot.id, slot.startAt);
+  const discountMinor = discount ? Math.round((slot.feeMinor * discount.percentOff) / 100) : 0;
+  const coachFee = slot.feeMinor - discountMinor;
+  const serviceFee = serviceFeeFor(coachFee, settings.platformCommissionRate);
   const total = coachFee + serviceFee;
 
   // Create booking + lock slot atomically.
@@ -92,6 +100,7 @@ export async function createBooking(input: {
           coachFeeMinor: coachFee,
           serviceFeeMinor: serviceFee,
           totalMinor: total,
+          discountMinor,
           currency: slot.currency,
           clientMessage: input.message ?? null,
         })

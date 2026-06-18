@@ -72,6 +72,20 @@ export const notificationChannel = pgEnum("notification_channel", [
   "push",
   "in_app",
 ]);
+export const featuredPromotionStatus = pgEnum("featured_promotion_status", [
+  "pending_payment",
+  "active",
+  "expired",
+  "cancelled",
+]);
+export const discountType = pgEnum("discount_type", [
+  "early_bird",
+  "flat_percent",
+]);
+export const paymentMethodKind = pgEnum("payment_method_kind", [
+  "card",
+  "bank",
+]);
 
 /* ------------------------------------------------------------------ *
  *  Auth tables (Auth.js / NextAuth Drizzle adapter shape)
@@ -184,12 +198,16 @@ export const coachProfiles = pgTable(
     ratingAvg: doublePrecision("rating_avg").notNull().default(0),
     ratingCount: integer("rating_count").notNull().default(0),
     cancellationStrikes: integer("cancellation_strikes").notNull().default(0),
+    // Cheap to check/sort on for "featured first" listings; featuredPromotions
+    // below remains the purchase/audit trail.
+    featuredUntil: timestamp("featured_until"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [
     uniqueIndex("coach_profiles_user_uniq").on(t.userId),
     index("coach_profiles_status_idx").on(t.status, t.visibility),
+    index("coach_profiles_featured_idx").on(t.featuredUntil),
   ],
 );
 
@@ -330,6 +348,7 @@ export const bookings = pgTable(
     coachFeeMinor: integer("coach_fee_minor").notNull(),
     serviceFeeMinor: integer("service_fee_minor").notNull(),
     totalMinor: integer("total_minor").notNull(),
+    discountMinor: integer("discount_minor").notNull().default(0),
     currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
     paymentRef: text("payment_ref"),
     paymentIntentId: text("payment_intent_id"),
@@ -373,6 +392,88 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   usedAt: timestamp("used_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [index("prt_user_idx").on(t.userId)]);
+
+/* ------------------------------------------------------------------ *
+ *  Platform settings — singleton row, admin-configurable overrides of
+ *  the env-driven defaults in src/server/config.ts
+ * ------------------------------------------------------------------ */
+export const platformSettings = pgTable("platform_settings", {
+  id: integer("id").primaryKey().default(1),
+  platformCommissionRate: doublePrecision("platform_commission_rate"),
+  platformMinFeeMinor: integer("platform_min_fee_minor"),
+  stripeAccountLabel: varchar("stripe_account_label", { length: 160 }),
+  supportEmail: varchar("support_email", { length: 200 }),
+  payoutInstructions: text("payout_instructions"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+/* ------------------------------------------------------------------ *
+ *  Featured coach promotions — admin-configured plan catalog + the
+ *  purchase/status history for each coach's paid placement.
+ * ------------------------------------------------------------------ */
+export const featuredPlans = pgTable("featured_plans", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  key: varchar("key", { length: 40 }).notNull(),
+  label: varchar("label", { length: 120 }).notNull(),
+  durationDays: integer("duration_days").notNull(),
+  priceMinor: integer("price_minor").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
+  active: boolean("active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [uniqueIndex("featured_plans_key_uniq").on(t.key)]);
+
+export const featuredPromotions = pgTable("featured_promotions", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  coachId: text("coach_id").notNull().references(() => coachProfiles.id, { onDelete: "cascade" }),
+  planId: text("plan_id").notNull().references(() => featuredPlans.id, { onDelete: "restrict" }),
+  startAt: timestamp("start_at"),
+  endAt: timestamp("end_at"),
+  amountMinor: integer("amount_minor").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
+  status: featuredPromotionStatus("status").notNull().default("pending_payment"),
+  paymentIntentId: text("payment_intent_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [index("featured_promotions_coach_idx").on(t.coachId, t.status)]);
+
+/* ------------------------------------------------------------------ *
+ *  Coach-defined discount rules, applied automatically at booking time
+ * ------------------------------------------------------------------ */
+export const discountRules = pgTable("discount_rules", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  coachId: text("coach_id").notNull().references(() => coachProfiles.id, { onDelete: "cascade" }),
+  // Null slotId = applies to all of this coach's open slots.
+  slotId: text("slot_id").references(() => slots.id, { onDelete: "cascade" }),
+  label: varchar("label", { length: 120 }).notNull(),
+  type: discountType("type").notNull(),
+  percentOff: integer("percent_off").notNull(),
+  // early_bird only: booking must be made at least this many days before the
+  // slot's startAt to qualify.
+  minDaysBeforeStart: integer("min_days_before_start"),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [index("discount_rules_coach_idx").on(t.coachId, t.active)]);
+
+/* ------------------------------------------------------------------ *
+ *  Client payment methods / refund accounts — mock data only, no real
+ *  card or bank numbers are ever stored (masked/last-4 representation).
+ * ------------------------------------------------------------------ */
+export const clientPaymentMethods = pgTable("client_payment_methods", {
+  id: text("id").primaryKey().$defaultFn(() => createId()),
+  clientId: text("client_id").notNull().references(() => clientProfiles.id, { onDelete: "cascade" }),
+  kind: paymentMethodKind("kind").notNull(),
+  // card fields
+  brand: varchar("brand", { length: 40 }),
+  last4: varchar("last4", { length: 4 }),
+  expMonth: integer("exp_month"),
+  expYear: integer("exp_year"),
+  // bank/refund-account fields
+  bankName: varchar("bank_name", { length: 160 }),
+  accountHolderName: varchar("account_holder_name", { length: 160 }),
+  accountLast4: varchar("account_last4", { length: 4 }),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [index("client_payment_methods_client_idx").on(t.clientId, t.kind)]);
 
 /* ------------------------------------------------------------------ *
  *  Reviews (BRD §6.5)
@@ -491,6 +592,8 @@ export const coachProfilesRelations = relations(
     slots: many(slots),
     bookings: many(bookings),
     reviews: many(reviews),
+    featuredPromotions: many(featuredPromotions),
+    discountRules: many(discountRules),
   }),
 );
 
@@ -503,6 +606,7 @@ export const clientProfilesRelations = relations(
     }),
     preferredSports: many(clientPreferredSports),
     bookings: many(bookings),
+    paymentMethods: many(clientPaymentMethods),
   }),
 );
 
@@ -574,3 +678,33 @@ export const passwordResetTokensRelations = relations(
     }),
   }),
 );
+
+export const featuredPlansRelations = relations(featuredPlans, ({ many }) => ({
+  promotions: many(featuredPromotions),
+}));
+
+export const featuredPromotionsRelations = relations(featuredPromotions, ({ one }) => ({
+  coach: one(coachProfiles, {
+    fields: [featuredPromotions.coachId],
+    references: [coachProfiles.id],
+  }),
+  plan: one(featuredPlans, {
+    fields: [featuredPromotions.planId],
+    references: [featuredPlans.id],
+  }),
+}));
+
+export const discountRulesRelations = relations(discountRules, ({ one }) => ({
+  coach: one(coachProfiles, {
+    fields: [discountRules.coachId],
+    references: [coachProfiles.id],
+  }),
+  slot: one(slots, { fields: [discountRules.slotId], references: [slots.id] }),
+}));
+
+export const clientPaymentMethodsRelations = relations(clientPaymentMethods, ({ one }) => ({
+  client: one(clientProfiles, {
+    fields: [clientPaymentMethods.clientId],
+    references: [clientProfiles.id],
+  }),
+}));

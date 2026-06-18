@@ -13,6 +13,8 @@ import { db, schema } from "@/server/db";
 import { eq } from "drizzle-orm";
 import { gbp } from "@/lib/money";
 import { FormPendingLoader } from "@/components/ui/FormPendingLoader";
+import { getPlatformSettings } from "@/server/repositories/settings";
+import { getBestDiscountForBooking } from "@/server/repositories/discounts";
 
 export default async function BookPage({
   params,
@@ -23,8 +25,14 @@ export default async function BookPage({
   const slot = await getBookableSlot(slotId);
   if (!slot) notFound();
 
-  const serviceFee = serviceFeeFor(slot.feeMinor);
-  const total = slot.feeMinor + serviceFee;
+  const [settings, discount] = await Promise.all([
+    getPlatformSettings(),
+    getBestDiscountForBooking(slot.coachId, slot.id, slot.startAt),
+  ]);
+  const discountMinor = discount ? Math.round((slot.feeMinor * discount.percentOff) / 100) : 0;
+  const discountedFee = slot.feeMinor - discountMinor;
+  const serviceFee = serviceFeeFor(discountedFee, settings.platformCommissionRate);
+  const total = discountedFee + serviceFee;
   const booked = slot.status !== "open";
   const spotsRemaining = Math.max(0, slot.maxParticipants - slot.currentParticipants);
   const isGroup = slot.maxParticipants > 1;
@@ -82,6 +90,9 @@ export default async function BookPage({
               </dl>
               <div className="flex flex-col gap-2 pt-5 text-sm">
                 <div className="flex justify-between text-white/70"><span>Session fee</span><span>{gbp(slot.feeMinor)}</span></div>
+                {discount && (
+                  <div className="flex justify-between text-brand"><span>{discount.label} (-{discount.percentOff}%)</span><span>-{gbp(discountMinor)}</span></div>
+                )}
                 <div className="flex justify-between text-white/70"><span>Service charge</span><span>{gbp(serviceFee)}</span></div>
                 <div className="flex justify-between font-bold text-lg text-white pt-2 border-t border-white/10 mt-1"><span>Total</span><span>{gbp(total)}</span></div>
               </div>
