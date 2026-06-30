@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, desc } from "drizzle-orm";
+import { and, eq, desc, inArray } from "drizzle-orm";
 import { db, schema } from "@/server/db";
 
 export async function getClientBookings(clientUserId: string) {
@@ -44,9 +44,14 @@ export async function getCoachBookings(coachUserId: string, statusFilter?: strin
   const filters = [eq(schema.bookings.coachId, coach.id)];
   if (statusFilter && statusFilter !== "all") {
     // Accept comma-separated statuses e.g. "confirmed,completed"
-    const statuses = statusFilter.split(",") as (typeof schema.bookings.status._.data)[];
+    const statuses = statusFilter
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean) as (typeof schema.bookings.status._.data)[];
     if (statuses.length === 1) {
       filters.push(eq(schema.bookings.status, statuses[0]!));
+    } else if (statuses.length > 1) {
+      filters.push(inArray(schema.bookings.status, statuses));
     }
   }
 

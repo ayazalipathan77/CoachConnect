@@ -12,7 +12,7 @@ import {
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { createId } from "@/lib/id";
 
 /* ------------------------------------------------------------------ *
@@ -109,7 +109,14 @@ export const users = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("users_email_uniq").on(t.email)],
+  (t) => [
+    uniqueIndex("users_email_uniq").on(t.email),
+    // Trigram GIN indexes so discover's leading-wildcard ILIKE search on
+    // name/city can use an index instead of a full table scan. Requires the
+    // pg_trgm extension (created in the migration).
+    index("users_name_trgm_idx").using("gin", sql`${t.name} gin_trgm_ops`),
+    index("users_city_trgm_idx").using("gin", sql`${t.locationCity} gin_trgm_ops`),
+  ],
 );
 
 export const accounts = pgTable(
@@ -195,6 +202,10 @@ export const coachProfiles = pgTable(
       .default("unverified"),
     completeness: integer("completeness").notNull().default(0),
     freeIntroUsedMonth: integer("free_intro_used_month").notNull().default(0),
+    // The "YYYY-MM" (UTC) the free-intro counter applies to. When a booking
+    // lands in a newer month the counter resets — the cap is per calendar
+    // month (BRD §5.4), not a lifetime total.
+    freeIntroMonthKey: varchar("free_intro_month_key", { length: 7 }),
     ratingAvg: doublePrecision("rating_avg").notNull().default(0),
     ratingCount: integer("rating_count").notNull().default(0),
     cancellationStrikes: integer("cancellation_strikes").notNull().default(0),

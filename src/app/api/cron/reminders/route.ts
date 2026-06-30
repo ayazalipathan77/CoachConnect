@@ -74,7 +74,12 @@ async function maybeRemind(
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  if (CRON_SECRET && req.headers.get("x-cron-secret") !== CRON_SECRET) {
+  // Fail closed: without a configured secret the endpoint must not run, or it
+  // would be an unauthenticated trigger for DB work + notification dispatch.
+  if (!CRON_SECRET) {
+    return NextResponse.json({ error: "Cron not configured" }, { status: 503 });
+  }
+  if (req.headers.get("x-cron-secret") !== CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

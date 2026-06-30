@@ -6,7 +6,7 @@
 
 **Legend:** ✅ Done · 🟡 In progress · 🔲 TODO · ⏭️ Deferred (Phase 2 / out of MVP scope)
 
-**Last updated:** 2026-06-18
+**Last updated:** 2026-06-30
 
 > **Progress so far (re-audited 2026-06-18):** Phases 0, 4, 5, 6, 8 are
 > essentially complete; Phases 1–3 have the core flow working but several
@@ -20,6 +20,11 @@
 > Element / real card capture (4.3), recurring slot templates (2.8), video
 > uploads (2.5), message spam filtering (5.2), GDPR tooling (6.7), and the
 > accessibility/security/performance audits in Phase 7.
+>
+> **Update 2026-06-30:** a code-vs-roadmap audit found and fixed 10 correctness
+> bugs / performance cliffs hiding behind "Done" items (free-intro was a
+> lifetime cap not monthly; failed payments stranded seats; discover fetched
+> every coach with no pagination; unindexed search; etc.) — see **Phase 10**.
 
 ---
 
@@ -75,7 +80,7 @@
 | 2.8 | Bulk/recurring slot templates | 🔲 | `recurringKind`/`recurringGroupId` columns exist in schema, completely unused — no UI ever sets them beyond the default `one_off` |
 | 2.9 | Slot edit/cancel rules | ✅ | locked once non-`open`; coach can re-edit an expired-unbooked slot to a future date |
 | 2.10 | Overlap prevention vs confirmed bookings | ✅ | service-layer guard on create + edit |
-| 2.11 | Fee config + platform minimum + free intro (2/mo) | ✅ | admin-configurable minimum (`platform_settings`), free-intro cap enforced in `createBooking` |
+| 2.11 | Fee config + platform minimum + free intro (2/mo) | ✅ | admin-configurable minimum (`platform_settings`); free-intro cap now genuinely **per calendar month** (was a lifetime counter — see Phase 10.1) and reserved atomically inside the booking transaction |
 | 2.12 | Group sessions (multi-participant slots) | ✅ | *(not in original plan — was listed under "Deferred")* `maxParticipants`/`currentParticipants` pooling, atomic claim on booking |
 | 2.13 | Coach discount rules (early-bird / flat %) | ✅ | *(not in original plan)* `/dashboard/coach/discounts`, auto-applied at booking time |
 | 2.14 | Paid featured placement | ✅ | *(not in original plan)* `/dashboard/coach/featured`, admin-configurable plans, charged via `PaymentProvider.charge()` |
@@ -88,10 +93,10 @@
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
-| 3.1 | Search interface (free-text) | ✅ | name / sport / location |
+| 3.1 | Search interface (free-text) | ✅ | name / sport / location; free-text now backed by `pg_trgm` GIN indexes instead of a full table scan (Phase 10.7) |
 | 3.2 | Filters: sport, distance, availability, price, rating, level | 🟡 | sport/price/rating/level done; no real "distance" or "availability" filter |
 | 3.3 | Relevance sort (proximity + rating) + sort options | 🟡 | price/rating/reviews sorts are real; "relevance" is just an alias for rating sort, no combined proximity score |
-| 3.4 | List view of results | ✅ | coach cards, featured-first |
+| 3.4 | List view of results | ✅ | coach cards, featured-first; now paginated (24/page) with featured-first ordering done in SQL — no longer fetches every public coach into memory (Phase 10.5) |
 | 3.5 | Map view + proximity clustering | 🟡 | real Leaflet map with pins (`CoachMap.tsx`/`MapView.tsx`), not just a stub — no clustering at high pin density though |
 | 3.6 | Public coach profile (client view) | ✅ | all sections + bookable slots + verified documents + featured badge |
 | 3.7 | 'Book This Slot' / 'Enquire' / social share | ✅ | CTAs (no social share button specifically) |
@@ -106,7 +111,7 @@
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
 | 4.1 | Slot selection + booking summary | ✅ | price incl. service charge + any discount applied |
-| 4.2 | Payment intent (escrow, manual capture) | ✅ | Stripe test / mock adapter |
+| 4.2 | Payment intent (escrow, manual capture) | ✅ | Stripe test / mock adapter; a failed payment now releases the claimed seat + reverses the free-intro counter (compensating txn) instead of stranding an unpaid booking — see Phase 10.2 |
 | 4.3 | Card + wallets (Apple/Google Pay) | 🔲 | no Stripe Payment Element / real card form anywhere — checkout is a single "Confirm & pay" button (mock escrow only); client "saved cards" UI (`PaymentMethodsManager.tsx`) is explicitly mock/demo data, not real tokenization |
 | 4.4 | Booking confirmation (email + in-app) | ✅ | |
 | 4.5 | Escrow release on completion | ✅ | `completeSession()` calls `releaseToCoach()` |
@@ -134,7 +139,7 @@
 | 5.4 | Coach single response to review | ✅ | `ReviewResponseForm` |
 | 5.5 | Aggregate rating on profile | ✅ | recalculated on every new review |
 | 5.6 | Notification matrix (email/push/in-app) | ✅ | all three channels actually dispatch depending on type (`src/server/notifications/service.ts`) — booking/cancellation/waitlist events route to in_app+email, 1h reminders to in_app+push |
-| 5.7 | Session reminders (24h / 1h) | 🟡 | `/api/cron/reminders` route + logic exists and works, but nothing currently *calls* it on Render (the free-tier Cron Job service was removed — see Operations notes below); needs an external scheduler hitting it with `CRON_SECRET` |
+| 5.7 | Session reminders (24h / 1h) | 🟡 | `/api/cron/reminders` route + logic exists and works, but nothing currently *calls* it on Render (the free-tier Cron Job service was removed — see Operations notes below); needs an external scheduler hitting it with `CRON_SECRET`. Now **fails closed**: if `CRON_SECRET` is unset the endpoint returns 503 instead of running unauthenticated (Phase 10.10) |
 
 ---
 
@@ -198,6 +203,28 @@
 | 9.2 | Homepage reorder + "Become a Coach" split out | ✅ | testimonials moved up (trust before deeper scroll); full coach pitch moved to its own `/become-a-coach` page, homepage shows a compact teaser |
 | 9.3 | "How it Works" anchor link double-click bug | ✅ | fixed same-page hash clicks (no-op URL change) and cross-page navigation race against in-progress layout |
 | 9.4 | Coach earnings vs. chart mismatch | ✅ | "Earnings" stat now counts `completed` only, matching the chart and the escrow model (previously also counted `confirmed`, future revenue) |
+
+---
+
+## 🧯 Phase 10 — Correctness & performance hardening ✅
+
+> Branch: `fix/roadmap-gaps-perf`. Audit of the roadmap against the actual code
+> surfaced bugs hiding behind "Done" items plus several scalability cliffs.
+> All ten fixed, verified (tsc + lint + build + migration applied), and the
+> query shapes/index exercised against the DB.
+
+| # | Fix | Status | Notes |
+|---|-----|--------|-------|
+| 10.1 | Free-intro cap is monthly, not lifetime | ✅ | `free_intro_used_month` only ever incremented and never reset → after 2 ever, a coach could never offer another free intro. Added `free_intro_month_key`; counter resets when the calendar month (UTC) changes. `src/server/services/booking.ts` |
+| 10.2 | Failed payment no longer strands a seat | ✅ | Seat (`currentParticipants`/`booked`) was claimed in-txn but payment ran after commit; a non-`succeeded` result left an unpaid booking holding the seat forever. Now a compensating transaction deletes the booking, releases the seat, and reverses the free-intro counter |
+| 10.3 | Free-intro cap race closed | ✅ | Check-then-increment was non-atomic across two statements; concurrent free bookings could both pass. Now a single conditional `UPDATE … WHERE used < 2` inside the booking transaction |
+| 10.4 | Payment-failure path made transactional | ✅ | Folded into 10.2 — the failure compensation runs in one transaction. (Full crash-between-commit-and-capture reconciliation still needs Stripe webhooks, tracked under 4.3) |
+| 10.5 | Discover query paginated + sorted in SQL | ✅ | `listCoaches` fetched **every** public coach, multiplied rows via a sports left-join, then deduped/sorted featured-first in JS. Now: EXISTS-based sport filter (no fan-out), featured-first + secondary sort in SQL, `LIMIT`/`OFFSET` (24/page), one batched query for the displayed sport. `/discover` got prev/next controls |
+| 10.6 | Map geocoding deduped by city | ✅ | Map view geocoded once **per coach** (N external calls/load). Now geocodes each distinct city once per request via an in-request cache |
+| 10.7 | `pg_trgm` GIN indexes for search | ✅ | Leading-wildcard `ILIKE` on `users.name`/`location_city` was a full scan. Added the extension + `users_name_trgm_idx` / `users_city_trgm_idx` (migration `0003`) |
+| 10.8 | Bounded message history load | ✅ | `getMessages` loaded an entire thread every open; now returns the latest `MESSAGES_PAGE_SIZE` (100), newest-first then re-ordered chronologically |
+| 10.9 | `countUnread` uses SQL `count()` | ✅ | Was fetching every unread row and taking `.length` in JS; now a single aggregate |
+| 10.10 | Coach-bookings multi-status filter fixed | ✅ | Comma-separated statuses were silently ignored (only `length === 1` applied a filter), returning all bookings; now uses `inArray`. Plus cron reminders endpoint fails closed when `CRON_SECRET` is unset |
 
 ---
 

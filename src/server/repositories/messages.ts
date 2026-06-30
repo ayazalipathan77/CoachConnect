@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, count, desc, eq, isNull, ne, or } from "drizzle-orm";
+import { and, count, desc, eq, isNull, ne, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db, schema } from "@/server/db";
 
@@ -39,7 +39,7 @@ export async function getOrCreateConversation(coachUserId: string, clientUserId:
   return created.id;
 }
 
-import { CONVERSATIONS_PAGE_SIZE } from "@/lib/pagination";
+import { CONVERSATIONS_PAGE_SIZE, MESSAGES_PAGE_SIZE } from "@/lib/pagination";
 
 export async function getConversations(userId: string, limit = CONVERSATIONS_PAGE_SIZE, offset = 0) {
   return db
@@ -82,8 +82,10 @@ export async function getConversation(conversationId: string) {
   return row ?? null;
 }
 
-export async function getMessages(conversationId: string) {
-  return db
+export async function getMessages(conversationId: string, limit = MESSAGES_PAGE_SIZE) {
+  // Fetch the most recent `limit` messages (desc + limit), then return them in
+  // chronological order for display. Avoids loading an entire long thread.
+  const rows = await db
     .select({
       id: schema.messages.id,
       senderId: schema.messages.senderId,
@@ -93,7 +95,9 @@ export async function getMessages(conversationId: string) {
     })
     .from(schema.messages)
     .where(eq(schema.messages.conversationId, conversationId))
-    .orderBy(asc(schema.messages.createdAt));
+    .orderBy(desc(schema.messages.createdAt))
+    .limit(limit);
+  return rows.reverse();
 }
 
 export async function markMessagesRead(conversationId: string, readerId: string) {
@@ -110,8 +114,8 @@ export async function markMessagesRead(conversationId: string, readerId: string)
 }
 
 export async function countUnread(userId: string): Promise<number> {
-  const rows = await db
-    .select({ id: schema.messages.id })
+  const [row] = await db
+    .select({ total: count(schema.messages.id) })
     .from(schema.messages)
     .innerJoin(
       schema.conversations,
@@ -127,5 +131,5 @@ export async function countUnread(userId: string): Promise<number> {
         isNull(schema.messages.readAt),
       ),
     );
-  return rows.length;
+  return row?.total ?? 0;
 }
