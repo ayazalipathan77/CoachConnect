@@ -11,6 +11,11 @@ export type BookingResult =
   | { ok: true; bookingId: string }
   | { ok: false; error: string };
 
+/** Calendar-month key (UTC), e.g. "2026-06", that the free-intro cap resets on. */
+function currentMonthKey(now: Date = new Date()): string {
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
 /** Platform service fee for a given coach fee (BRD §8.2). */
 export function serviceFeeFor(
   coachFeeMinor: number,
@@ -49,17 +54,8 @@ export async function createBooking(input: {
     .limit(1);
   if (!slot) return { ok: false, error: "This session is fully booked." };
 
-  // BRD §5.4 — free intro session cap: max 2 per calendar month per coach.
-  if (slot.feeMinor === 0) {
-    const [coachProfile] = await db
-      .select({ freeIntroUsedMonth: schema.coachProfiles.freeIntroUsedMonth })
-      .from(schema.coachProfiles)
-      .where(eq(schema.coachProfiles.id, slot.coachId))
-      .limit(1);
-    if (coachProfile && coachProfile.freeIntroUsedMonth >= 2) {
-      return { ok: false, error: "This coach has reached the limit of 2 free intro sessions this month." };
-    }
-  }
+  const isFreeIntro = slot.feeMinor === 0;
+  const monthKey = currentMonthKey();
 
   const settings = await getPlatformSettings();
   const discount = await getBestDiscountForBooking(slot.coachId, slot.id, slot.startAt);
@@ -90,6 +86,28 @@ export async function createBooking(input: {
         .returning({ id: schema.slots.id });
       if (locked.length === 0) throw new Error("FULL");
 
+      // BRD §5.4 — free intro cap: max 2 per calendar month per coach.
+      // Reserve atomically within the same transaction (check-and-increment in
+      // one statement) so concurrent free bookings can't both slip past the
+      // cap. The month key resets the counter when a new month begins.
+      if (isFreeIntro) {
+        const reserved = await tx
+          .update(schema.coachProfiles)
+          .set({
+            freeIntroUsedMonth: sql`CASE WHEN ${schema.coachProfiles.freeIntroMonthKey} = ${monthKey} THEN ${schema.coachProfiles.freeIntroUsedMonth} + 1 ELSE 1 END`,
+            freeIntroMonthKey: monthKey,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(schema.coachProfiles.id, slot.coachId),
+              sql`(${schema.coachProfiles.freeIntroMonthKey} IS DISTINCT FROM ${monthKey} OR ${schema.coachProfiles.freeIntroUsedMonth} < 2)`,
+            ),
+          )
+          .returning({ id: schema.coachProfiles.id });
+        if (reserved.length === 0) throw new Error("FREE_INTRO_CAP");
+      }
+
       const [booking] = await tx
         .insert(schema.bookings)
         .values({
@@ -108,6 +126,9 @@ export async function createBooking(input: {
       return booking.id;
     });
   } catch (err) {
+    if (err instanceof Error && err.message === "FREE_INTRO_CAP") {
+      return { ok: false, error: "This coach has reached the limit of 2 free intro sessions this month." };
+    }
     if (err instanceof Error && err.message === "FULL") {
       return { ok: false, error: "This session is fully booked." };
     }
@@ -123,23 +144,44 @@ export async function createBooking(input: {
   });
   const confirmed = await integrations.payments.confirmPayment(intent.paymentIntentId);
 
+  // Payment failed: the seat (and any free-intro reservation) were already
+  // claimed inside the transaction above, so we must compensate — otherwise an
+  // unpaid booking permanently consumes a slot. Roll it all back and bail.
+  if (confirmed.status !== "succeeded") {
+    await db.transaction(async (tx) => {
+      await tx.delete(schema.bookings).where(eq(schema.bookings.id, bookingId));
+      await tx
+        .update(schema.slots)
+        .set({
+          currentParticipants: sql`GREATEST(${schema.slots.currentParticipants} - 1, 0)`,
+          status: sql`CASE WHEN ${schema.slots.status} = 'booked' THEN 'open'::slot_status ELSE ${schema.slots.status} END`,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.slots.id, slot.id));
+      if (isFreeIntro) {
+        await tx
+          .update(schema.coachProfiles)
+          .set({ freeIntroUsedMonth: sql`GREATEST(${schema.coachProfiles.freeIntroUsedMonth} - 1, 0)` })
+          .where(
+            and(
+              eq(schema.coachProfiles.id, slot.coachId),
+              eq(schema.coachProfiles.freeIntroMonthKey, monthKey),
+            ),
+          );
+      }
+    });
+    return { ok: false, error: "Payment could not be completed. Please try again." };
+  }
+
   await db
     .update(schema.bookings)
     .set({
-      status: confirmed.status === "succeeded" ? "confirmed" : "pending_payment",
+      status: "confirmed",
       paymentIntentId: intent.paymentIntentId,
       paymentRef: intent.paymentIntentId,
       updatedAt: new Date(),
     })
     .where(eq(schema.bookings.id, bookingId));
-
-  // Increment free intro counter if this was a free session.
-  if (slot.feeMinor === 0) {
-    await db
-      .update(schema.coachProfiles)
-      .set({ freeIntroUsedMonth: sql`${schema.coachProfiles.freeIntroUsedMonth} + 1` })
-      .where(eq(schema.coachProfiles.id, slot.coachId));
-  }
 
   // Fetch names needed for notifications.
   const [coachProfile] = await db

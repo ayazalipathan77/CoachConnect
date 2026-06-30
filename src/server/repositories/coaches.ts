@@ -1,6 +1,9 @@
 import "server-only";
-import { and, eq, or, ilike, desc, asc, gt, gte, lte, SQL } from "drizzle-orm";
+import { and, eq, or, ilike, desc, asc, gt, gte, lte, sql, exists, inArray, SQL } from "drizzle-orm";
 import { db, schema } from "@/server/db";
+
+/** Default discover page size — keeps the query and payload bounded. */
+export const COACHES_PAGE_SIZE = 24;
 
 export type CoachSort = "relevance" | "price" | "rating" | "reviews";
 
@@ -27,12 +30,31 @@ export async function listCoaches(opts: {
   maxRateMinor?: number;
   minRating?: number;
   experienceLevel?: string;
+  limit?: number;
+  offset?: number;
 } = {}): Promise<CoachCard[]> {
   const filters: SQL[] = [
     eq(schema.coachProfiles.status, "active"),
     eq(schema.coachProfiles.visibility, "public"),
   ];
-  if (opts.sportSlug) filters.push(eq(schema.sports.slug, opts.sportSlug));
+  // Sport filter via EXISTS rather than a join, so a coach who teaches several
+  // sports still produces exactly one row (no fan-out, so LIMIT counts coaches).
+  if (opts.sportSlug) {
+    filters.push(
+      exists(
+        db
+          .select({ one: sql`1` })
+          .from(schema.coachSports)
+          .innerJoin(schema.sports, eq(schema.sports.id, schema.coachSports.sportId))
+          .where(
+            and(
+              eq(schema.coachSports.coachId, schema.coachProfiles.id),
+              eq(schema.sports.slug, opts.sportSlug),
+            ),
+          ),
+      ),
+    );
+  }
   if (opts.q) {
     const like = `%${opts.q}%`;
     filters.push(
@@ -52,12 +74,19 @@ export async function listCoaches(opts: {
     }
   }
 
-  const orderBy =
+  const secondarySort =
     opts.sort === "price"
       ? asc(schema.coachProfiles.defaultRateMinor)
       : opts.sort === "reviews"
         ? desc(schema.coachProfiles.ratingCount)
         : desc(schema.coachProfiles.ratingAvg);
+
+  // Featured coaches first. COALESCE keeps non-featured (NULL featuredUntil) as
+  // `false` so DESC doesn't sort NULLs to the top.
+  const featuredExpr = sql<boolean>`COALESCE(${schema.coachProfiles.featuredUntil} > now(), false)`;
+
+  const limit = opts.limit ?? COACHES_PAGE_SIZE;
+  const offset = opts.offset ?? 0;
 
   const rows = await db
     .select({
@@ -65,7 +94,6 @@ export async function listCoaches(opts: {
       name: schema.users.name,
       image: schema.users.image,
       city: schema.users.locationCity,
-      sport: schema.sports.name,
       experienceLevel: schema.coachProfiles.experienceLevel,
       ratingAvg: schema.coachProfiles.ratingAvg,
       ratingCount: schema.coachProfiles.ratingCount,
@@ -77,38 +105,41 @@ export async function listCoaches(opts: {
     })
     .from(schema.coachProfiles)
     .innerJoin(schema.users, eq(schema.users.id, schema.coachProfiles.userId))
-    .leftJoin(
-      schema.coachSports,
-      eq(schema.coachSports.coachId, schema.coachProfiles.id),
-    )
-    .leftJoin(schema.sports, eq(schema.sports.id, schema.coachSports.sportId))
     .where(and(...filters))
-    .orderBy(orderBy);
+    .orderBy(desc(featuredExpr), secondarySort)
+    .limit(limit)
+    .offset(offset);
 
-  // Dedupe coaches that match on multiple sport rows.
-  const now = Date.now();
-  const seen = new Map<string, CoachCard>();
-  for (const r of rows) {
-    if (seen.has(r.id)) continue;
-    seen.set(r.id, {
-      id: r.id,
-      name: r.name,
-      image: r.image,
-      city: r.city,
-      sport: r.sport,
-      experienceLevel: r.experienceLevel,
-      ratingAvg: r.ratingAvg,
-      ratingCount: r.ratingCount,
-      rateMinor: r.rateMinor,
-      verified: r.verificationStatus === "verified",
-      featured: !!r.featuredUntil && r.featuredUntil.getTime() > now,
-      lat: r.lat,
-      lng: r.lng,
-    });
+  // Attach one sport name per coach for the card, batched in a single query.
+  const ids = rows.map((r) => r.id);
+  const sportByCoach = new Map<string, string>();
+  if (ids.length > 0) {
+    const sportRows = await db
+      .select({ coachId: schema.coachSports.coachId, name: schema.sports.name })
+      .from(schema.coachSports)
+      .innerJoin(schema.sports, eq(schema.sports.id, schema.coachSports.sportId))
+      .where(inArray(schema.coachSports.coachId, ids));
+    for (const s of sportRows) {
+      if (!sportByCoach.has(s.coachId)) sportByCoach.set(s.coachId, s.name);
+    }
   }
-  // Featured coaches sort first; Array#sort is stable, so the existing
-  // relevance/price/rating order is preserved within each group.
-  return [...seen.values()].sort((a, b) => Number(b.featured) - Number(a.featured));
+
+  const now = Date.now();
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    image: r.image,
+    city: r.city,
+    sport: sportByCoach.get(r.id) ?? null,
+    experienceLevel: r.experienceLevel,
+    ratingAvg: r.ratingAvg,
+    ratingCount: r.ratingCount,
+    rateMinor: r.rateMinor,
+    verified: r.verificationStatus === "verified",
+    featured: !!r.featuredUntil && r.featuredUntil.getTime() > now,
+    lat: r.lat,
+    lng: r.lng,
+  }));
 }
 
 export async function getCoachById(id: string) {
